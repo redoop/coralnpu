@@ -82,8 +82,8 @@ class CrossbarConfig(enableHighmem: Boolean) {
     )
   } else {
     Seq(
-      AddressRange(0x00000000, 0x2000),    // 8kB
-      AddressRange(0x00010000, 0x8000),    // 32kB
+      AddressRange(0x00000000, 0x1000),    // 4kB - Reduced from 8kB for area optimization
+      AddressRange(0x00010000, 0x2000),    // 8kB - Reduced from 32kB for area optimization
       AddressRange(0x00030000, 0x1000)     // 4kB
     )
   }

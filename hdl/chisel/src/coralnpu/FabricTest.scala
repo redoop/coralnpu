@@ -156,8 +156,8 @@ class FabricMuxSpec extends AnyFreeSpec with ChiselSim {
   var p = new Parameters
 
   val memoryRegions = Seq(
-    new MemoryRegion(0x0000, 0x2000, MemoryRegionType.IMEM), // ITCM
-    new MemoryRegion(0x10000, 0x8000, MemoryRegionType.DMEM), // DTCM
+    new MemoryRegion(0x0000, 0x1000, MemoryRegionType.IMEM), // ITCM - Reduced from 8KB to 4KB
+    new MemoryRegion(0x10000, 0x2000, MemoryRegionType.DMEM), // DTCM - Reduced from 32KB to 8KB
     new MemoryRegion(0x30000, 0x2000, MemoryRegionType.Peripheral), // CSR
   )
 

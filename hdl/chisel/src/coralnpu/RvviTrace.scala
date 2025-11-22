@@ -77,7 +77,7 @@ object GenerateRvviTraceSource {
         |    .ILEN(32),
         |    .XLEN(32),
         |    .FLEN(32),
-        |    .VLEN(128),
+        |    .VLEN(64),
         |    .NHART(1),
         |    .RETIRE(GEN_retirementBufferSize)
         |  ) rvvi();

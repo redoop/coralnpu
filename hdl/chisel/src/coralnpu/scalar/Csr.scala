@@ -410,7 +410,7 @@ class Csr(p: Parameters) extends Module {
           vtypeEn.get  -> io.rvv.get.vtype,
           vxrmEn.get   -> io.rvv.get.vxrm,
           vxsatEn.get  -> io.rvv.get.vxsat,
-          vlenbEn.get -> 16.U(32.W),  // Vector length in Bytes
+          vlenbEn.get -> 8.U(32.W),  // Vector length in Bytes (VLEN=64, so VLENB=8)
         )
       }.getOrElse(Seq())
       ++

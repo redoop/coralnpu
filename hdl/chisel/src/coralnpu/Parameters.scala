@@ -40,8 +40,8 @@ def contains(addr: UInt): Bool = {
 
 object MemoryRegions {
   val default = Seq(
-    new MemoryRegion(0x00000, 0x2000, MemoryRegionType.IMEM), // ITCM
-    new MemoryRegion(0x10000, 0x8000, MemoryRegionType.DMEM), // DTCM
+    new MemoryRegion(0x00000, 0x1000, MemoryRegionType.IMEM), // ITCM - Reduced from 8KB to 4KB
+    new MemoryRegion(0x10000, 0x2000, MemoryRegionType.DMEM), // DTCM - Reduced from 32KB to 8KB
     new MemoryRegion(0x30000, 0x1000, MemoryRegionType.Peripheral), // CSR
   )
   val tcmHighmem = Seq(
@@ -64,14 +64,14 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
   // Machine.
   val programCounterBits = 32
   val instructionBits = 32
-  val instructionLanes = 4
+  val instructionLanes = 2  // Reduced from 4 to 2 for area optimization
 
   // Enable extra logic for verification purposes.
   var enableVerification = false
 
   // Enable RVV. This conforms to the RVV1.0 specification.
   var enableRvv = false
-  val rvvVlen = 128
+  val rvvVlen = 64  // Reduced from 128 to 64 for area optimization
   def rvvVlenb: Int = { rvvVlen / 8 }
 
   def useRetirementBuffer: Boolean = { enableVerification }
@@ -100,7 +100,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
 
   // Scalar Core Fetch bus.
   val fetchAddrBits = 32   // do not change
-  var fetchDataBits = 256  // do not change
+  var fetchDataBits = 128  // Reduced from 256 to 128 for area optimization
   def fetchInstrSlots: Int = {
     assert(fetchDataBits % 32 == 0)
     assert(instructionBits % 32 == 0)
@@ -110,7 +110,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
 
   // Scalar Core Load Store Unit bus.
   val lsuAddrBits = 32  // do not change
-  var lsuDataBits = 256
+  var lsuDataBits = 128  // Reduced from 256 to 128 for area optimization
   def lsuDataBytes: Int = { lsuDataBits / 8 }
   val lsuDelayPipelineLen = 1
   def dbusSize: Int = { log2Ceil(lsuDataBits / 8) + 1 }

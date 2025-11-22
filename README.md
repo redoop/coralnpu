@@ -42,6 +42,17 @@ bazel build //tests/verilator_sim:core_mini_axi_sim
 
 # Run the binary on the simulator:
 bazel-bin/tests/verilator_sim/core_mini_axi_sim --binary bazel-out/k8-fastbuild-ST-dd8dc713f32d/bin/examples/coralnpu_v2_hello_world_add_floats.elf
+
+
+# Generate SystemVerilog
+# A scalar-only Coral NPU configuration is provided that can integrate with an AXI-based system. The SystemVerilog can be generated with this build command:
+
+bazel build //hdl/chisel/src/coralnpu:core_mini_axi_cc_library_emit_verilog
+
+# You can build the RISC-V vector (RV32IMF_Zve32x) version of Coral NPU with this command:
+
+bazel build //hdl/chisel/src/coralnpu:rvv_core_mini_axi_cc_library_emit_verilog
+
 ```
 
 

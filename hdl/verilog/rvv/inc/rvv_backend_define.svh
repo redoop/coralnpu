@@ -6,7 +6,7 @@
 `endif
 
 // number of scalar core issue lane
-`define ISSUE_LANE              4
+`define ISSUE_LANE              2  // Reduced from 4 to 2 for area optimization
 
 // the max number of instructions are decoded per cycle in DE stage
 `define NUM_DE_INST             2
@@ -59,15 +59,15 @@
   // the number of read ports for VRF
   `define NUM_DP_VRF            4
 
-  // the depth of queue/station/buffer
-  `define CQ_DEPTH              16
-  `define UQ_DEPTH              16
+  // the depth of queue/station/buffer (Reduced for area optimization)
+  `define CQ_DEPTH              8   // Reduced from 16 to 8
+  `define UQ_DEPTH              8   // Reduced from 16 to 8
   `define ALU_RS_DEPTH          4
-  `define PMTRDT_RS_DEPTH       8
+  `define PMTRDT_RS_DEPTH       4   // Reduced from 8 to 4
   `define MUL_RS_DEPTH          4
   `define DIV_RS_DEPTH          4
   `define LSU_RS_DEPTH          4
-  `define ROB_DEPTH             8
+  `define ROB_DEPTH             4   // Reduced from 8 to 4
 `endif
 
 // VRF REG depth
@@ -76,10 +76,10 @@
 // Uops Queue data width
 `define UQ_WIDTH                $bits(UOP_QUEUE_t)
 
-// the max number of processor unit in EX stage
+// the max number of processor unit in EX stage (Reduced for area optimization)
 `define NUM_LSU                 2
-`define NUM_ALU                 2
-`define NUM_MUL                 2
+`define NUM_ALU                 1  // Reduced from 2 to 1
+`define NUM_MUL                 1  // Reduced from 2 to 1
 `define NUM_PMTRDT              1
 `define NUM_DIV                 1
 `define NUM_PU                  `NUM_ALU+`NUM_PMTRDT+`NUM_MUL+`NUM_DIV+`NUM_LSU
@@ -103,8 +103,8 @@
 `define UOP_INDEX_WIDTH         5
 `define UOP_INDEX_WIDTH_ARI     $clog2(`EMUL_MAX)
 
-// Vector CSR
-`define VLEN                    128
+// Vector CSR (Reduced for area optimization)
+`define VLEN                    64   // Reduced from 128 to 64
 `define VLENB                   (`VLEN/8)
 // VLMAX = VLEN*LMUL/SEW
 // vstart < VLMAX_max and vl <= VLMAX_max, VLMAX_max=VLEN*LMUL_max(8)/SEW_min(8)=VLEN
