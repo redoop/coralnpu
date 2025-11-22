@@ -51,9 +51,9 @@ else
     exit 1
 fi
 
-# Check lsuDataBits
-if grep -q "var lsuDataBits = 128" hdl/chisel/src/coralnpu/Parameters.scala; then
-    echo "✓ lsuDataBits reduced to 128"
+# Check lsuDataBits (kept at 256 for LSU compatibility)
+if grep -q "var lsuDataBits = 256" hdl/chisel/src/coralnpu/Parameters.scala; then
+    echo "✓ lsuDataBits kept at 256 (for LSU compatibility)"
 else
     echo "✗ lsuDataBits not properly set"
     exit 1
@@ -115,7 +115,8 @@ echo ""
 echo "Summary of changes:"
 echo "  - VLEN: 128 → 64 bits"
 echo "  - Instruction Lanes: 4 → 2"
-echo "  - Memory Bus Width: 256 → 128 bits"
+echo "  - Fetch Bus Width: 256 → 128 bits"
+echo "  - LSU Data Bus: kept at 256 bits"
 echo "  - ITCM: 8KB → 4KB"
 echo "  - DTCM: 32KB → 8KB"
 echo "  - NUM_ALU: 2 → 1"
