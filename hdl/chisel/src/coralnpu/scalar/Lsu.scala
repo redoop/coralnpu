@@ -292,14 +292,33 @@ object ComputeIndexedAddrs {
     val indices16 = UIntToVec(indices, 16).map(x => Cat(0.U(16.W), x))
     val indices32 = UIntToVec(indices, 32)
 
+    // Replicate indices to fill bytesPerSlot
+    // The number of replications needed depends on bytesPerSlot and the index element size
+    // For 16-bit indices: need bytesPerSlot/2 total indices (each index covers 2 bytes)
+    // For 32-bit indices: need bytesPerSlot/4 total indices (each index covers 4 bytes)
+    // But indices16/indices32 only have indices.getWidth/16 and indices.getWidth/32 elements
+    // So we need to replicate them
+    
+    // For bytesPerSlot=16, indices.getWidth=128:
+    //   indices16 has 8 elements, but we need 16 total -> replicate 2x
+    //   indices32 has 4 elements, but we need 16 total -> replicate 4x
+    // For bytesPerSlot=32, indices.getWidth=256:
+    //   indices16 has 16 elements, but we need 32 total -> replicate 2x
+    //   indices32 has 8 elements, but we need 32 total -> replicate 4x
+    
+    // Build replicated index vectors by repeating the pattern
+    // Since indices width varies, we need to handle this dynamically
+    // For simplicity, just use the original approach which works for the default case
+    val indices16_replicated = VecInit(indices16 ++ indices16)
+    val indices32_replicated = VecInit(indices32 ++ indices32 ++ indices32 ++ indices32)
+    
     val indices_v = MuxCase(VecInit.fill(bytesPerSlot)(0.U(32.W)), Seq(
       // 8-bit indices.
       (indexWidth === "b000".U) -> VecInit(indices8),
-      // 16-bit indices.
-      (indexWidth === "b101".U) -> VecInit(indices16 ++ indices16),
-      // 32-bit indices.
-      (indexWidth === "b110".U) -> VecInit(
-          indices32 ++ indices32 ++ indices32 ++ indices32),
+      // 16-bit indices - replicate to fill bytesPerSlot
+      (indexWidth === "b101".U) -> indices16_replicated,
+      // 32-bit indices - replicate to fill bytesPerSlot
+      (indexWidth === "b110".U) -> indices32_replicated,
     ))
 
     MuxCase(VecInit.fill(bytesPerSlot)(0.U(32.W)), Seq(
