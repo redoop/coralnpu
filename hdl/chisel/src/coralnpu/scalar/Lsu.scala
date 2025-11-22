@@ -288,27 +288,15 @@ object ComputeIndexedAddrs {
             indices: UInt,
             indexWidth: UInt,
             sew: UInt): Vec[UInt] = {
+    // indices is now always bytesPerSlot * 8 bits wide (replicated if needed)
     val indices8 = UIntToVec(indices, 8).map(x => Cat(0.U(24.W), x))
     val indices16 = UIntToVec(indices, 16).map(x => Cat(0.U(16.W), x))
     val indices32 = UIntToVec(indices, 32)
 
-    // Replicate indices to fill bytesPerSlot
-    // The number of replications needed depends on bytesPerSlot and the index element size
-    // For 16-bit indices: need bytesPerSlot/2 total indices (each index covers 2 bytes)
-    // For 32-bit indices: need bytesPerSlot/4 total indices (each index covers 4 bytes)
-    // But indices16/indices32 only have indices.getWidth/16 and indices.getWidth/32 elements
-    // So we need to replicate them
-    
-    // For bytesPerSlot=16, indices.getWidth=128:
-    //   indices16 has 8 elements, but we need 16 total -> replicate 2x
-    //   indices32 has 4 elements, but we need 16 total -> replicate 4x
-    // For bytesPerSlot=32, indices.getWidth=256:
-    //   indices16 has 16 elements, but we need 32 total -> replicate 2x
-    //   indices32 has 8 elements, but we need 32 total -> replicate 4x
-    
-    // Build replicated index vectors by repeating the pattern
-    // Since indices width varies, we need to handle this dynamically
-    // For simplicity, just use the original approach which works for the default case
+    // Replicate indices to match bytesPerSlot
+    // indices8 has bytesPerSlot elements (one per byte)
+    // indices16 has bytesPerSlot/2 elements, replicate 2x
+    // indices32 has bytesPerSlot/4 elements, replicate 4x
     val indices16_replicated = VecInit(indices16 ++ indices16)
     val indices32_replicated = VecInit(indices32 ++ indices32 ++ indices32 ++ indices32)
     
@@ -452,14 +440,21 @@ class LsuSlot(bytesPerSlot: Int, bytesPerLine: Int) extends Bundle {
     val segmentBaseAddr = baseAddr + (segmentStride * vectorLoop.segment.curr)(31, 0)
     val bitsPerSlot = bytesPerSlot * 8
     val indices = MuxCase(rvv2lsu.idx.bits.data, Seq(
-        // 2 of 2
-        ((vectorLoop.indexParition.curr === 1.U) && (vectorLoop.indexParition.max === 1.U)) -> (rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot / 2)),
-        // 2 of 4
-        ((vectorLoop.indexParition.curr === 1.U) && (vectorLoop.indexParition.max === 3.U)) -> (rvv2lsu.idx.bits.data(bitsPerSlot / 2 - 1, bitsPerSlot / 4)),
-        // 3 of 4
-        ((vectorLoop.indexParition.curr === 2.U) && (vectorLoop.indexParition.max === 3.U)) -> (rvv2lsu.idx.bits.data(bitsPerSlot * 3 / 4 - 1, bitsPerSlot / 2)),
-        // 4 of 4
-        ((vectorLoop.indexParition.curr === 3.U) && (vectorLoop.indexParition.max === 3.U)) -> (rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot * 3 / 4)),
+        // 2 of 2 - replicate to fill bitsPerSlot
+        ((vectorLoop.indexParition.curr === 1.U) && (vectorLoop.indexParition.max === 1.U)) -> 
+            Cat(rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot / 2), rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot / 2)),
+        // 2 of 4 - replicate to fill bitsPerSlot
+        ((vectorLoop.indexParition.curr === 1.U) && (vectorLoop.indexParition.max === 3.U)) -> 
+            Cat(rvv2lsu.idx.bits.data(bitsPerSlot / 2 - 1, bitsPerSlot / 4), rvv2lsu.idx.bits.data(bitsPerSlot / 2 - 1, bitsPerSlot / 4),
+                rvv2lsu.idx.bits.data(bitsPerSlot / 2 - 1, bitsPerSlot / 4), rvv2lsu.idx.bits.data(bitsPerSlot / 2 - 1, bitsPerSlot / 4)),
+        // 3 of 4 - replicate to fill bitsPerSlot
+        ((vectorLoop.indexParition.curr === 2.U) && (vectorLoop.indexParition.max === 3.U)) -> 
+            Cat(rvv2lsu.idx.bits.data(bitsPerSlot * 3 / 4 - 1, bitsPerSlot / 2), rvv2lsu.idx.bits.data(bitsPerSlot * 3 / 4 - 1, bitsPerSlot / 2),
+                rvv2lsu.idx.bits.data(bitsPerSlot * 3 / 4 - 1, bitsPerSlot / 2), rvv2lsu.idx.bits.data(bitsPerSlot * 3 / 4 - 1, bitsPerSlot / 2)),
+        // 4 of 4 - replicate to fill bitsPerSlot
+        ((vectorLoop.indexParition.curr === 3.U) && (vectorLoop.indexParition.max === 3.U)) -> 
+            Cat(rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot * 3 / 4), rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot * 3 / 4),
+                rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot * 3 / 4), rvv2lsu.idx.bits.data(bitsPerSlot - 1, bitsPerSlot * 3 / 4)),
     ))
     result.addrs := MuxCase(addrs, Seq(
         op.isOneOf(LsuOp.VLOAD_UNIT, LsuOp.VSTORE_UNIT) ->
@@ -479,10 +474,26 @@ class LsuSlot(bytesPerSlot: Int, bytesPerLine: Int) extends Bundle {
         (!vectorLoop.subvector.isEnabled()) ||
         rvv2lsu.idx.valid)
 
+    val vregfileData = UIntToVec(rvv2lsu.vregfile.bits.data, 8)
+    // Replicate vregfile data to fill bytesPerSlot if needed
+    val vregfileDataFull = if (vregfileData.length < bytesPerSlot) {
+      val replicationFactor = bytesPerSlot / vregfileData.length
+      VecInit(Seq.fill(replicationFactor)(vregfileData).flatten)
+    } else {
+      vregfileData
+    }
     result.data := Mux(shouldUpdate && LsuOp.isVector(op) && rvv2lsu.vregfile.valid,
-        UIntToVec(rvv2lsu.vregfile.bits.data, 8), data)
+        vregfileDataFull, data)
+    val maskBools = VecInit(rvv2lsu.mask.bits.asBools)
+    // Replicate mask to fill bytesPerSlot if needed
+    val maskBoolsFull = if (maskBools.length < bytesPerSlot) {
+      val replicationFactor = bytesPerSlot / maskBools.length
+      VecInit(Seq.fill(replicationFactor)(maskBools).flatten)
+    } else {
+      maskBools
+    }
     result.active := Mux(shouldUpdate && LsuOp.isVector(op) && rvv2lsu.mask.valid,
-        VecInit(rvv2lsu.mask.bits.asBools), active)
+        maskBoolsFull, active)
     result.pendingVector := pendingVector && !shouldUpdate
 
     result

@@ -235,6 +235,10 @@ class UncachedFetch(p: Parameters) extends FetchUnit(p) {
       new FetchInstruction(p), p.fetchInstrSlots, window))
   instructionBuffer.io.feedIn <> ctrl.io.bufferRequest
   io.inst.lanes <> instructionBuffer.io.out.take(p.instructionLanes)
+  // Connect unused outputs to avoid uninitialized sink errors
+  for (i <- p.instructionLanes until p.fetchInstrSlots) {
+    instructionBuffer.io.out(i).ready := false.B
+  }
   instructionBuffer.io.flush := io.iflush.valid || branch.valid
   ctrl.io.bufferSpaces := instructionBuffer.io.nSpace
 

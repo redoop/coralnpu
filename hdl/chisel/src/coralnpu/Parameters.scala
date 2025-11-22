@@ -110,7 +110,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
 
   // Scalar Core Load Store Unit bus.
   val lsuAddrBits = 32  // do not change
-  var lsuDataBits = 128  // Reduced from 256 to 128 for area optimization
+  var lsuDataBits = 128  // Keep at 256 for now due to LSU indexed addressing complexity
   def lsuDataBytes: Int = { lsuDataBits / 8 }
   val lsuDelayPipelineLen = 1
   def dbusSize: Int = { log2Ceil(lsuDataBits / 8) + 1 }
