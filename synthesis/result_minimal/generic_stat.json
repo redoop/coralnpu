@@ -1,0 +1,73 @@
+{
+   "creator": "Yosys 0.58+138 (git sha1 3d5b1e0a9, clang++ 18.1.8 -fPIC -O3)",
+   "invocation": "stat -json -tech cmos ",
+   "modules": {
+      "\\CoreMiniAxi": {
+         "num_wires":         40709,
+         "num_wire_bits":     317789,
+         "num_pub_wires":     2354,
+         "num_pub_wire_bits": 129269,
+         "num_ports":         120,
+         "num_port_bits":     1533,
+         "num_memories":      0,
+         "num_memory_bits":   0,
+         "num_processes":     0,
+         "num_cells":         304749,
+         "num_submodules":       0,
+         "num_cells_by_type": {
+            "$_AND_": 27110,
+            "$_DFFE_PN0P_": 246,
+            "$_DFFE_PN1P_": 2,
+            "$_DFFE_PP0P_": 3802,
+            "$_DFFE_PP_": 99953,
+            "$_DFF_PN0_": 164,
+            "$_DFF_PP0_": 243,
+            "$_DFF_P_": 23,
+            "$_DLATCH_N_": 2,
+            "$_MUX_": 139511,
+            "$_NOR_": 21,
+            "$_NOT_": 2249,
+            "$_OR_": 21759,
+            "$_SDFFCE_PN0P_": 1,
+            "$_SDFFCE_PP0P_": 1,
+            "$_XNOR_": 16,
+            "$_XOR_": 9646
+         },
+         "estimated_num_transistors": "2088240+"
+      }
+   },
+      "design": {
+         "num_wires":         40709,
+         "num_wire_bits":     317789,
+         "num_pub_wires":     2354,
+         "num_pub_wire_bits": 129269,
+         "num_ports":         120,
+         "num_port_bits":     1533,
+         "num_memories":      0,
+         "num_memory_bits":   0,
+         "num_processes":     0,
+         "num_cells":         304749,
+         "num_submodules":       0,
+         "num_cells_by_type": {
+            "$_AND_": 27110,
+            "$_DFFE_PN0P_": 246,
+            "$_DFFE_PN1P_": 2,
+            "$_DFFE_PP0P_": 3802,
+            "$_DFFE_PP_": 99953,
+            "$_DFF_PN0_": 164,
+            "$_DFF_PP0_": 243,
+            "$_DFF_P_": 23,
+            "$_DLATCH_N_": 2,
+            "$_MUX_": 139511,
+            "$_NOR_": 21,
+            "$_NOT_": 2249,
+            "$_OR_": 21759,
+            "$_SDFFCE_PN0P_": 1,
+            "$_SDFFCE_PP0P_": 1,
+            "$_XNOR_": 16,
+            "$_XOR_": 9646
+         },
+         "estimated_num_transistors": "2088240+"
+      }
+}
+

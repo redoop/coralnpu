@@ -1,18 +1,22 @@
+# Synthesis logs (too large for git)
+synthesis/*.log
+synthesis/result*/*.log
+
+# Synthesis temporary files
+synthesis/result*/tmp/
+synthesis/*.v
+synthesis/*.json
+
+# Bazel
 bazel-*
-# Robot
-log.html
-report.html
-robot_output.xml
-# VCS generated things
-novas.fsdb
-ucli.key
-internal
-*vcst*
-novas*
-*csrc*
-# Build artifacts for UVM
-tests/uvm/rtl
-tests/uvm/sim_work
-tests/uvm/vc_hdrs.h
-# python
-__pycache__
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

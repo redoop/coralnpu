@@ -1,0 +1,36 @@
+
+Syntax error in command `stat -json -lib /opt/tools/r2g_synth_1107/lib_ics55/ics55_LLSC_H7CL_ss_rcworst_1p08_125_nldm.lib -lib /opt/tools/r2g_synth_1107/lib_ics55/ics55_LLSC_H7CR_ss_rcworst_1p08_125_nldm.lib':
+
+    stat [options] [selection]
+
+Print some statistics (number of objects) on the selected portion of the
+design.
+Extracts the area of cells from a liberty file, if provided.
+
+    -top <module>
+        print design hierarchy with this module as top. if the design is fully
+        selected and a module has the 'top' attribute set, this module is used
+        default value for this option.
+
+    -liberty <liberty_file>
+        use cell area information from the provided liberty file
+
+    -tech <technology>
+        print area estimate for the specified technology. Currently supported
+        values for <technology>: xilinx, cmos
+
+    -width
+        annotate internal cell types with their word width.
+        e.g. $add_8 for an 8 bit wide $add cell.
+
+    -json
+        output the statistics in a machine-readable JSON format.
+        this is output to the console; use "tee" to output to a file.
+
+    -hierarchy
+        print hierarchical statistics, i.e. The area and number of cells include submodules.
+ 	     this changes the format of the json output.
+
+ERROR: Command syntax error: Unknown option or option in arguments.
+> stat -json -lib /opt/tools/r2g_synth_1107/lib_ics55/ics55_LLSC_H7CL_ss_rcworst_1p08_125_nldm.lib -lib /opt/tools/r2g_synth_1107/lib_ics55/ics55_LLSC_H7CR_ss_rcworst_1p08_125_nldm.lib
+>            ^
