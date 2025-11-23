@@ -363,6 +363,10 @@ chisel_cc_library(
     chisel_lib = ":coralnpu_scalar",
     emit_class = "coralnpu.EmitAlu",
     module_name = "Alu",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -373,6 +377,10 @@ chisel_cc_library(
         "VCore_parameters.h",
     ],
     module_name = "Core",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -387,6 +395,10 @@ chisel_cc_library(
     ],
     module_name = "CoreScalar",
     verilog_file_path = "CoreScalar.sv",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -404,6 +416,10 @@ chisel_cc_library(
     ],
     module_name = "CoreMini",
     verilog_file_path = "CoreMini.sv",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 template_rule(
@@ -446,6 +462,7 @@ template_rule(
     chisel_lib = ":coralnpu",
     emit_class = "coralnpu.EmitCore",
     vopts = [
+        "-DSYNTHESIS",
         "-DUSE_GENERIC",
         # Warnings that we disable for fpnew
         "-Wno-UNOPTFLAT",
@@ -476,6 +493,7 @@ chisel_cc_library(
     module_name = "CoreMiniHighmemAxi",
     verilog_file_path = "CoreMiniHighmemAxi.sv",
     vopts = [
+        "-DSYNTHESIS",
         "-DUSE_GENERIC",
         # Warnings that we disable for fpnew
         "-Wno-UNOPTFLAT",
@@ -506,6 +524,7 @@ chisel_cc_library(
     module_name = "CoreMiniDebugAxi",
     verilog_file_path = "CoreMiniDebugAxi.sv",
     vopts = [
+        "-DSYNTHESIS",
         "-DUSE_GENERIC",
     ],
 )
@@ -632,6 +651,7 @@ template_rule(
     chisel_lib = ":coralnpu",
     emit_class = "coralnpu.EmitCore",
     vopts = [
+        "-DSYNTHESIS",
         "-DUSE_GENERIC",
         # RVV
         "-Wno-WIDTH",
@@ -664,6 +684,10 @@ chisel_cc_library(
     chisel_lib = ":coralnpu",
     emit_class = "coralnpu.EmitDBus2Axi",
     module_name = "DBus2AxiV2",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -671,6 +695,10 @@ chisel_cc_library(
     chisel_lib = ":coralnpu_scalar",
     emit_class = "coralnpu.EmitDvu",
     module_name = "Dvu",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -678,6 +706,10 @@ chisel_cc_library(
     chisel_lib = ":coralnpu_scalar",
     emit_class = "coralnpu.EmitMlu",
     module_name = "Mlu",
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -687,6 +719,10 @@ chisel_cc_library(
     module_name = "L1DCache",
     verilog_deps = [
         "//hdl/verilog:sram_1rw_256x288",
+    ],
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
     ],
 )
 
@@ -698,6 +734,10 @@ chisel_cc_library(
     verilog_deps = [
         "//hdl/verilog:sram_1rw_256x288",
     ],
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
+    ],
 )
 
 chisel_cc_library(
@@ -707,5 +747,9 @@ chisel_cc_library(
     module_name = "L1ICache",
     verilog_deps = [
         "//hdl/verilog:sram_1rw_256x256",
+    ],
+    vopts = [
+        "-DSYNTHESIS",
+        "-DUSE_GENERIC",
     ],
 )
