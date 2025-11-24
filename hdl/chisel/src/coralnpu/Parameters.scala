@@ -95,8 +95,8 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
   }
 
   // L0ICache Fetch unit.
-  var enableFetchL0 = true
-  val fetchCacheBytes = 1024
+  var enableFetchL0 = false
+  val fetchCacheBytes = 512
 
   // Scalar Core Fetch bus.
   val fetchAddrBits = 32   // do not change
@@ -110,7 +110,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
 
   // Scalar Core Load Store Unit bus.
   val lsuAddrBits = 32  // do not change
-  var lsuDataBits = 128  // Keep at 256 for now due to LSU indexed addressing complexity
+  var lsuDataBits = 64  // Keep at 256 for now due to LSU indexed addressing complexity
   def lsuDataBytes: Int = { lsuDataBits / 8 }
   val lsuDelayPipelineLen = 1
   def dbusSize: Int = { log2Ceil(lsuDataBits / 8) + 1 }
@@ -126,14 +126,14 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
   def axiSysDataBits: Int = { lsuDataBits }
 
   // [Internal] L1ICache interface.
-  val l1islots = 256
+  val l1islots = 128
   val l1iassoc = 4
   val axi0IdBits = 4  // (1x banks, 4 bits unused)
   val axi0AddrBits = 32
   def axi0DataBits: Int = { fetchDataBits }
 
   // [Internal] L1DCache interface.
-  val l1dslots = 256  // (x2 banks)
+  val l1dslots = 128  // (x2 banks)
   val axi1IdBits = 4  // (x2 banks, 3 bits unused)
   val axi1AddrBits = 32
   def axi1DataBits: Int = { lsuDataBits } /* axiSysDataBits */ /* vectorBits */
