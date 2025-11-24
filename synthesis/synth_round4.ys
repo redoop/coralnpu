@@ -1,0 +1,73 @@
+# Round 4 激进综合脚本
+
+# 读取 Verilog
+read_verilog -sv CoreMiniAxi.v
+
+# 层次化处理
+hierarchy -check -top CoreMiniAxi
+
+# 第一轮优化 - 基础优化
+opt -full
+opt_expr -mux_undef -mux_bool
+opt_merge -share_all
+opt_clean -purge
+
+# 展平设计以获得更好的优化机会
+flatten
+
+# 第二轮优化 - 展平后优化
+opt -full
+opt_expr -mux_undef -mux_bool
+opt_merge -share_all
+opt_clean -purge
+
+# FSM 优化
+fsm -expand
+fsm_opt
+
+# 第三轮优化
+opt -full
+opt_expr -mux_undef -mux_bool
+opt_reduce -full
+opt_merge -share_all
+opt_clean -purge
+
+# Memory 优化
+memory -nomap
+memory_collect
+memory_dff
+opt -full
+
+# 第四轮优化 - Memory 后
+opt -full
+opt_expr -mux_undef -mux_bool
+opt_merge -share_all
+opt_clean -purge
+
+# 技术映射 - 使用激进参数
+techmap -map +/techmap.v
+opt -fast
+
+# ABC 优化 - 多轮激进优化
+abc -g AND,NAND,OR,NOR -fast
+opt -fast
+abc -g AND,NAND,OR,NOR -fast
+opt -fast
+abc -g AND,NAND,OR,NOR -fast
+
+# 最终优化
+opt -full
+opt_expr -mux_undef -mux_bool
+opt_merge -share_all
+opt_clean -purge
+
+# 统计
+tee -o result_round4/synth_stat.txt stat
+
+# 时序分析
+tee -o result_round4/timing_cell_count.rpt select -count t:*
+tee -o result_round4/timing_cell_stat.rpt stat -top CoreMiniAxi
+
+# 写出网表
+write_verilog -noattr -noexpr result_round4/CoreMiniAxi_synth.v
+

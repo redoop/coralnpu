@@ -40,8 +40,8 @@ def contains(addr: UInt): Bool = {
 
 object MemoryRegions {
   val default = Seq(
-    new MemoryRegion(0x00000, 0x1000, MemoryRegionType.IMEM), // ITCM - Reduced from 8KB to 4KB
-    new MemoryRegion(0x10000, 0x2000, MemoryRegionType.DMEM), // DTCM - Reduced from 32KB to 8KB
+    new MemoryRegion(0x00000, 0x800, MemoryRegionType.IMEM),  // ITCM - 2KB
+    new MemoryRegion(0x10000, 0x1000, MemoryRegionType.DMEM), // DTCM - 4KB
     new MemoryRegion(0x30000, 0x1000, MemoryRegionType.Peripheral), // CSR
   )
   val tcmHighmem = Seq(
@@ -64,7 +64,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
   // Machine.
   val programCounterBits = 32
   val instructionBits = 32
-  val instructionLanes = 2  // Reduced from 4 to 2 for area optimization
+  val instructionLanes = 1  // Reduced to 1 for maximum area optimization
 
   // Enable extra logic for verification purposes.
   var enableVerification = false
@@ -100,7 +100,7 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
 
   // Scalar Core Fetch bus.
   val fetchAddrBits = 32   // do not change
-  var fetchDataBits = 128  // Reduced from 256 to 128 for area optimization
+  var fetchDataBits = 64   // Reduced to 64 for maximum area optimization
   def fetchInstrSlots: Int = {
     assert(fetchDataBits % 32 == 0)
     assert(instructionBits % 32 == 0)
@@ -126,14 +126,14 @@ class Parameters(var m: Seq[MemoryRegion] = Seq(), val hartId: Int = 0) {
   def axiSysDataBits: Int = { lsuDataBits }
 
   // [Internal] L1ICache interface.
-  val l1islots = 128
+  val l1islots = 64  // Reduced to 64 for area optimization
   val l1iassoc = 4
   val axi0IdBits = 4  // (1x banks, 4 bits unused)
   val axi0AddrBits = 32
   def axi0DataBits: Int = { fetchDataBits }
 
   // [Internal] L1DCache interface.
-  val l1dslots = 128  // (x2 banks)
+  val l1dslots = 64  // Reduced to 64 for area optimization (x2 banks)
   val axi1IdBits = 4  // (x2 banks, 3 bits unused)
   val axi1AddrBits = 32
   def axi1DataBits: Int = { lsuDataBits } /* axiSysDataBits */ /* vectorBits */

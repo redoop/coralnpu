@@ -73,12 +73,12 @@ module CoreCSR(
   reg  [31:0]  pcStartReg;
   reg  [31:0]  statusReg;
   wire         readDataValid =
-    io_fabric_readDataAddr_bits == 32'h11C | io_fabric_readDataAddr_bits == 32'h118
-    | io_fabric_readDataAddr_bits == 32'h104 | io_fabric_readDataAddr_bits == 32'h114
-    | io_fabric_readDataAddr_bits == 32'h0 | io_fabric_readDataAddr_bits == 32'h4
-    | io_fabric_readDataAddr_bits == 32'h100 | io_fabric_readDataAddr_bits == 32'h110
-    | io_fabric_readDataAddr_bits == 32'h108 | io_fabric_readDataAddr_bits == 32'h120
-    | io_fabric_readDataAddr_bits == 32'h8 | io_fabric_readDataAddr_bits == 32'h10C;
+    io_fabric_readDataAddr_bits == 32'h4 | io_fabric_readDataAddr_bits == 32'h104
+    | io_fabric_readDataAddr_bits == 32'h120 | io_fabric_readDataAddr_bits == 32'h114
+    | io_fabric_readDataAddr_bits == 32'h8 | io_fabric_readDataAddr_bits == 32'h0
+    | io_fabric_readDataAddr_bits == 32'h100 | io_fabric_readDataAddr_bits == 32'h11C
+    | io_fabric_readDataAddr_bits == 32'h110 | io_fabric_readDataAddr_bits == 32'h118
+    | io_fabric_readDataAddr_bits == 32'h10C | io_fabric_readDataAddr_bits == 32'h108;
   reg          readDataNext_pipe_v;
   reg  [127:0] readDataNext_pipe_b;
   wire         _io_fabric_writeResp_T_1 = io_fabric_writeDataAddr_bits == 32'h0;
@@ -171,41 +171,22 @@ module Regfile(
   input  [4:0]  io_readAddr_0_addr,
   input         io_readAddr_1_valid,
   input  [4:0]  io_readAddr_1_addr,
-  input         io_readAddr_2_valid,
-  input  [4:0]  io_readAddr_2_addr,
-  input         io_readAddr_3_valid,
-  input  [4:0]  io_readAddr_3_addr,
   input         io_readSet_0_valid,
   input  [31:0] io_readSet_0_value,
   input         io_readSet_1_valid,
   input  [31:0] io_readSet_1_value,
-  input         io_readSet_2_valid,
-  input  [31:0] io_readSet_2_value,
-  input         io_readSet_3_valid,
-  input  [31:0] io_readSet_3_value,
   input         io_writeAddr_0_valid,
   input  [4:0]  io_writeAddr_0_addr,
-  input         io_writeAddr_1_valid,
-  input  [4:0]  io_writeAddr_1_addr,
   input         io_busAddr_0_bypass,
                 io_busAddr_0_immen,
   input  [31:0] io_busAddr_0_immed,
-  input         io_busAddr_1_bypass,
-  input  [31:0] io_busAddr_1_immed,
   output [31:0] io_target_0_data,
-                io_target_1_data,
                 io_busPort_addr_0,
-                io_busPort_addr_1,
                 io_busPort_data_0,
-                io_busPort_data_1,
   output        io_readData_0_valid,
   output [31:0] io_readData_0_data,
   output        io_readData_1_valid,
   output [31:0] io_readData_1_data,
-  output        io_readData_2_valid,
-  output [31:0] io_readData_2_data,
-  output        io_readData_3_valid,
-  output [31:0] io_readData_3_data,
   input         io_writeData_0_valid,
   input  [4:0]  io_writeData_0_bits_addr,
   input  [31:0] io_writeData_0_bits_data,
@@ -215,11 +196,7 @@ module Regfile(
   input         io_writeData_2_valid,
   input  [4:0]  io_writeData_2_bits_addr,
   input  [31:0] io_writeData_2_bits_data,
-  input         io_writeData_3_valid,
-  input  [4:0]  io_writeData_3_bits_addr,
-  input  [31:0] io_writeData_3_bits_data,
-  input         io_writeMask_1_valid,
-                io_writeMask_3_valid,
+  input         io_writeMask_2_valid,
   output [31:0] io_scoreboard_regd,
                 io_scoreboard_comb,
   output [5:0]  io_rfwriteCount
@@ -260,392 +237,293 @@ module Regfile(
   wire [31:0] _scoreboard_clr0_T_1 = 32'h1 << io_writeData_0_bits_addr;
   wire [31:0] _scoreboard_clr0_T_4 = 32'h1 << io_writeData_1_bits_addr;
   wire [31:0] _scoreboard_clr0_T_7 = 32'h1 << io_writeData_2_bits_addr;
-  wire [31:0] _scoreboard_clr0_T_10 = 32'h1 << io_writeData_3_bits_addr;
   wire [30:0] scoreboard_clr0 =
     (io_writeData_0_valid ? _scoreboard_clr0_T_1[31:1] : 31'h0)
     | (io_writeData_1_valid ? _scoreboard_clr0_T_4[31:1] : 31'h0)
-    | (io_writeData_2_valid ? _scoreboard_clr0_T_7[31:1] : 31'h0)
-    | (io_writeData_3_valid ? _scoreboard_clr0_T_10[31:1] : 31'h0);
+    | (io_writeData_2_valid ? _scoreboard_clr0_T_7[31:1] : 31'h0);
   reg         readDataReady_0;
   reg         readDataReady_1;
-  reg         readDataReady_2;
-  reg         readDataReady_3;
   reg  [31:0] readDataBits_0;
   reg  [31:0] readDataBits_1;
-  reg  [31:0] readDataBits_2;
-  reg  [31:0] readDataBits_3;
   wire        _valid_T = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1;
-  wire        valid_1 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1 & ~io_writeMask_1_valid;
-  wire        _valid_T_4 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1;
-  wire        valid_3 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1 & ~io_writeMask_3_valid;
+  wire        _valid_T_2 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1;
+  wire        valid_2 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1 & ~io_writeMask_2_valid;
   wire [31:0] data =
     (_valid_T ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_4 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_1_T = {_valid_T, valid_1, _valid_T_4, valid_3};
-  wire        _valid_T_8 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h2;
-  wire        valid_1_1 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h2 & ~io_writeMask_1_valid;
-  wire        _valid_T_12 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h2;
-  wire        valid_3_1 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h2 & ~io_writeMask_3_valid;
+    | (_valid_T_2 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_1_T = {_valid_T, _valid_T_2, valid_2};
+  wire        _valid_T_6 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h2;
+  wire        _valid_T_8 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h2;
+  wire        valid_2_1 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h2 & ~io_writeMask_2_valid;
   wire [31:0] data_1 =
-    (_valid_T_8 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_1 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_12 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_1 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_2_T = {_valid_T_8, valid_1_1, _valid_T_12, valid_3_1};
-  wire        _valid_T_16 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h3;
-  wire        valid_1_2 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h3 & ~io_writeMask_1_valid;
-  wire        _valid_T_20 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h3;
-  wire        valid_3_2 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h3 & ~io_writeMask_3_valid;
+    (_valid_T_6 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_8 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_1 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_2_T = {_valid_T_6, _valid_T_8, valid_2_1};
+  wire        _valid_T_12 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h3;
+  wire        _valid_T_14 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h3;
+  wire        valid_2_2 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h3 & ~io_writeMask_2_valid;
   wire [31:0] data_2 =
-    (_valid_T_16 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_2 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_20 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_2 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_3_T = {_valid_T_16, valid_1_2, _valid_T_20, valid_3_2};
-  wire        _valid_T_24 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h4;
-  wire        valid_1_3 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h4 & ~io_writeMask_1_valid;
-  wire        _valid_T_28 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h4;
-  wire        valid_3_3 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h4 & ~io_writeMask_3_valid;
+    (_valid_T_12 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_14 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_2 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_3_T = {_valid_T_12, _valid_T_14, valid_2_2};
+  wire        _valid_T_18 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h4;
+  wire        _valid_T_20 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h4;
+  wire        valid_2_3 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h4 & ~io_writeMask_2_valid;
   wire [31:0] data_3 =
-    (_valid_T_24 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_3 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_28 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_3 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_4_T = {_valid_T_24, valid_1_3, _valid_T_28, valid_3_3};
-  wire        _valid_T_32 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h5;
-  wire        valid_1_4 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h5 & ~io_writeMask_1_valid;
-  wire        _valid_T_36 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h5;
-  wire        valid_3_4 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h5 & ~io_writeMask_3_valid;
+    (_valid_T_18 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_20 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_3 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_4_T = {_valid_T_18, _valid_T_20, valid_2_3};
+  wire        _valid_T_24 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h5;
+  wire        _valid_T_26 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h5;
+  wire        valid_2_4 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h5 & ~io_writeMask_2_valid;
   wire [31:0] data_4 =
-    (_valid_T_32 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_4 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_36 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_4 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_5_T = {_valid_T_32, valid_1_4, _valid_T_36, valid_3_4};
-  wire        _valid_T_40 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h6;
-  wire        valid_1_5 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h6 & ~io_writeMask_1_valid;
-  wire        _valid_T_44 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h6;
-  wire        valid_3_5 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h6 & ~io_writeMask_3_valid;
+    (_valid_T_24 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_26 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_4 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_5_T = {_valid_T_24, _valid_T_26, valid_2_4};
+  wire        _valid_T_30 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h6;
+  wire        _valid_T_32 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h6;
+  wire        valid_2_5 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h6 & ~io_writeMask_2_valid;
   wire [31:0] data_5 =
-    (_valid_T_40 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_5 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_44 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_5 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_6_T = {_valid_T_40, valid_1_5, _valid_T_44, valid_3_5};
-  wire        _valid_T_48 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h7;
-  wire        valid_1_6 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h7 & ~io_writeMask_1_valid;
-  wire        _valid_T_52 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h7;
-  wire        valid_3_6 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h7 & ~io_writeMask_3_valid;
+    (_valid_T_30 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_32 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_5 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_6_T = {_valid_T_30, _valid_T_32, valid_2_5};
+  wire        _valid_T_36 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h7;
+  wire        _valid_T_38 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h7;
+  wire        valid_2_6 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h7 & ~io_writeMask_2_valid;
   wire [31:0] data_6 =
-    (_valid_T_48 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_6 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_52 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_6 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_7_T = {_valid_T_48, valid_1_6, _valid_T_52, valid_3_6};
-  wire        _valid_T_56 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h8;
-  wire        valid_1_7 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h8 & ~io_writeMask_1_valid;
-  wire        _valid_T_60 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h8;
-  wire        valid_3_7 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h8 & ~io_writeMask_3_valid;
+    (_valid_T_36 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_38 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_6 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_7_T = {_valid_T_36, _valid_T_38, valid_2_6};
+  wire        _valid_T_42 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h8;
+  wire        _valid_T_44 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h8;
+  wire        valid_2_7 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h8 & ~io_writeMask_2_valid;
   wire [31:0] data_7 =
-    (_valid_T_56 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_7 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_60 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_7 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_8_T = {_valid_T_56, valid_1_7, _valid_T_60, valid_3_7};
-  wire        _valid_T_64 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h9;
-  wire        valid_1_8 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h9 & ~io_writeMask_1_valid;
-  wire        _valid_T_68 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h9;
-  wire        valid_3_8 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h9 & ~io_writeMask_3_valid;
+    (_valid_T_42 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_44 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_7 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_8_T = {_valid_T_42, _valid_T_44, valid_2_7};
+  wire        _valid_T_48 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h9;
+  wire        _valid_T_50 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h9;
+  wire        valid_2_8 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h9 & ~io_writeMask_2_valid;
   wire [31:0] data_8 =
-    (_valid_T_64 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_8 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_68 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_8 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_9_T = {_valid_T_64, valid_1_8, _valid_T_68, valid_3_8};
-  wire        _valid_T_72 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hA;
-  wire        valid_1_9 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hA & ~io_writeMask_1_valid;
-  wire        _valid_T_76 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hA;
-  wire        valid_3_9 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hA & ~io_writeMask_3_valid;
+    (_valid_T_48 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_50 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_8 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_9_T = {_valid_T_48, _valid_T_50, valid_2_8};
+  wire        _valid_T_54 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hA;
+  wire        _valid_T_56 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hA;
+  wire        valid_2_9 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hA & ~io_writeMask_2_valid;
   wire [31:0] data_9 =
-    (_valid_T_72 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_9 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_76 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_9 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_10_T = {_valid_T_72, valid_1_9, _valid_T_76, valid_3_9};
-  wire        _valid_T_80 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hB;
-  wire        valid_1_10 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hB & ~io_writeMask_1_valid;
-  wire        _valid_T_84 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hB;
-  wire        valid_3_10 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hB & ~io_writeMask_3_valid;
+    (_valid_T_54 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_56 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_9 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_10_T = {_valid_T_54, _valid_T_56, valid_2_9};
+  wire        _valid_T_60 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hB;
+  wire        _valid_T_62 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hB;
+  wire        valid_2_10 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hB & ~io_writeMask_2_valid;
   wire [31:0] data_10 =
-    (_valid_T_80 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_10 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_84 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_10 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_11_T = {_valid_T_80, valid_1_10, _valid_T_84, valid_3_10};
-  wire        _valid_T_88 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hC;
-  wire        valid_1_11 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hC & ~io_writeMask_1_valid;
-  wire        _valid_T_92 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hC;
-  wire        valid_3_11 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hC & ~io_writeMask_3_valid;
+    (_valid_T_60 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_62 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_10 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_11_T = {_valid_T_60, _valid_T_62, valid_2_10};
+  wire        _valid_T_66 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hC;
+  wire        _valid_T_68 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hC;
+  wire        valid_2_11 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hC & ~io_writeMask_2_valid;
   wire [31:0] data_11 =
-    (_valid_T_88 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_11 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_92 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_11 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_12_T = {_valid_T_88, valid_1_11, _valid_T_92, valid_3_11};
-  wire        _valid_T_96 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hD;
-  wire        valid_1_12 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hD & ~io_writeMask_1_valid;
-  wire        _valid_T_100 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hD;
-  wire        valid_3_12 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hD & ~io_writeMask_3_valid;
+    (_valid_T_66 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_68 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_11 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_12_T = {_valid_T_66, _valid_T_68, valid_2_11};
+  wire        _valid_T_72 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hD;
+  wire        _valid_T_74 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hD;
+  wire        valid_2_12 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hD & ~io_writeMask_2_valid;
   wire [31:0] data_12 =
-    (_valid_T_96 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_12 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_100 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_12 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_13_T = {_valid_T_96, valid_1_12, _valid_T_100, valid_3_12};
-  wire        _valid_T_104 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hE;
-  wire        valid_1_13 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hE & ~io_writeMask_1_valid;
-  wire        _valid_T_108 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hE;
-  wire        valid_3_13 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hE & ~io_writeMask_3_valid;
+    (_valid_T_72 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_74 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_12 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_13_T = {_valid_T_72, _valid_T_74, valid_2_12};
+  wire        _valid_T_78 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hE;
+  wire        _valid_T_80 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hE;
+  wire        valid_2_13 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hE & ~io_writeMask_2_valid;
   wire [31:0] data_13 =
-    (_valid_T_104 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_13 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_108 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_13 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_14_T = {_valid_T_104, valid_1_13, _valid_T_108, valid_3_13};
-  wire        _valid_T_112 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hF;
-  wire        valid_1_14 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'hF & ~io_writeMask_1_valid;
-  wire        _valid_T_116 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'hF;
-  wire        valid_3_14 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'hF & ~io_writeMask_3_valid;
+    (_valid_T_78 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_80 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_13 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_14_T = {_valid_T_78, _valid_T_80, valid_2_13};
+  wire        _valid_T_84 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'hF;
+  wire        _valid_T_86 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'hF;
+  wire        valid_2_14 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'hF & ~io_writeMask_2_valid;
   wire [31:0] data_14 =
-    (_valid_T_112 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_14 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_116 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_14 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_15_T = {_valid_T_112, valid_1_14, _valid_T_116, valid_3_14};
-  wire        _valid_T_120 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h10;
-  wire        valid_1_15 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h10 & ~io_writeMask_1_valid;
-  wire        _valid_T_124 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h10;
-  wire        valid_3_15 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h10 & ~io_writeMask_3_valid;
+    (_valid_T_84 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_86 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_14 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_15_T = {_valid_T_84, _valid_T_86, valid_2_14};
+  wire        _valid_T_90 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h10;
+  wire        _valid_T_92 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h10;
+  wire        valid_2_15 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h10 & ~io_writeMask_2_valid;
   wire [31:0] data_15 =
-    (_valid_T_120 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_15 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_124 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_15 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_16_T = {_valid_T_120, valid_1_15, _valid_T_124, valid_3_15};
-  wire        _valid_T_128 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h11;
-  wire        valid_1_16 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h11 & ~io_writeMask_1_valid;
-  wire        _valid_T_132 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h11;
-  wire        valid_3_16 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h11 & ~io_writeMask_3_valid;
+    (_valid_T_90 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_92 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_15 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_16_T = {_valid_T_90, _valid_T_92, valid_2_15};
+  wire        _valid_T_96 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h11;
+  wire        _valid_T_98 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h11;
+  wire        valid_2_16 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h11 & ~io_writeMask_2_valid;
   wire [31:0] data_16 =
-    (_valid_T_128 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_16 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_132 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_16 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_17_T = {_valid_T_128, valid_1_16, _valid_T_132, valid_3_16};
-  wire        _valid_T_136 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h12;
-  wire        valid_1_17 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h12 & ~io_writeMask_1_valid;
-  wire        _valid_T_140 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h12;
-  wire        valid_3_17 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h12 & ~io_writeMask_3_valid;
+    (_valid_T_96 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_98 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_16 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_17_T = {_valid_T_96, _valid_T_98, valid_2_16};
+  wire        _valid_T_102 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h12;
+  wire        _valid_T_104 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h12;
+  wire        valid_2_17 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h12 & ~io_writeMask_2_valid;
   wire [31:0] data_17 =
-    (_valid_T_136 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_17 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_140 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_17 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_18_T = {_valid_T_136, valid_1_17, _valid_T_140, valid_3_17};
-  wire        _valid_T_144 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h13;
-  wire        valid_1_18 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h13 & ~io_writeMask_1_valid;
-  wire        _valid_T_148 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h13;
-  wire        valid_3_18 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h13 & ~io_writeMask_3_valid;
+    (_valid_T_102 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_104 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_17 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_18_T = {_valid_T_102, _valid_T_104, valid_2_17};
+  wire        _valid_T_108 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h13;
+  wire        _valid_T_110 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h13;
+  wire        valid_2_18 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h13 & ~io_writeMask_2_valid;
   wire [31:0] data_18 =
-    (_valid_T_144 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_18 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_148 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_18 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_19_T = {_valid_T_144, valid_1_18, _valid_T_148, valid_3_18};
-  wire        _valid_T_152 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h14;
-  wire        valid_1_19 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h14 & ~io_writeMask_1_valid;
-  wire        _valid_T_156 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h14;
-  wire        valid_3_19 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h14 & ~io_writeMask_3_valid;
+    (_valid_T_108 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_110 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_18 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_19_T = {_valid_T_108, _valid_T_110, valid_2_18};
+  wire        _valid_T_114 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h14;
+  wire        _valid_T_116 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h14;
+  wire        valid_2_19 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h14 & ~io_writeMask_2_valid;
   wire [31:0] data_19 =
-    (_valid_T_152 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_19 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_156 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_19 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_20_T = {_valid_T_152, valid_1_19, _valid_T_156, valid_3_19};
-  wire        _valid_T_160 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h15;
-  wire        valid_1_20 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h15 & ~io_writeMask_1_valid;
-  wire        _valid_T_164 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h15;
-  wire        valid_3_20 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h15 & ~io_writeMask_3_valid;
+    (_valid_T_114 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_116 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_19 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_20_T = {_valid_T_114, _valid_T_116, valid_2_19};
+  wire        _valid_T_120 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h15;
+  wire        _valid_T_122 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h15;
+  wire        valid_2_20 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h15 & ~io_writeMask_2_valid;
   wire [31:0] data_20 =
-    (_valid_T_160 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_20 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_164 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_20 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_21_T = {_valid_T_160, valid_1_20, _valid_T_164, valid_3_20};
-  wire        _valid_T_168 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h16;
-  wire        valid_1_21 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h16 & ~io_writeMask_1_valid;
-  wire        _valid_T_172 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h16;
-  wire        valid_3_21 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h16 & ~io_writeMask_3_valid;
+    (_valid_T_120 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_122 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_20 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_21_T = {_valid_T_120, _valid_T_122, valid_2_20};
+  wire        _valid_T_126 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h16;
+  wire        _valid_T_128 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h16;
+  wire        valid_2_21 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h16 & ~io_writeMask_2_valid;
   wire [31:0] data_21 =
-    (_valid_T_168 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_21 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_172 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_21 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_22_T = {_valid_T_168, valid_1_21, _valid_T_172, valid_3_21};
-  wire        _valid_T_176 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h17;
-  wire        valid_1_22 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h17 & ~io_writeMask_1_valid;
-  wire        _valid_T_180 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h17;
-  wire        valid_3_22 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h17 & ~io_writeMask_3_valid;
+    (_valid_T_126 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_128 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_21 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_22_T = {_valid_T_126, _valid_T_128, valid_2_21};
+  wire        _valid_T_132 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h17;
+  wire        _valid_T_134 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h17;
+  wire        valid_2_22 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h17 & ~io_writeMask_2_valid;
   wire [31:0] data_22 =
-    (_valid_T_176 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_22 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_180 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_22 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_23_T = {_valid_T_176, valid_1_22, _valid_T_180, valid_3_22};
-  wire        _valid_T_184 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h18;
-  wire        valid_1_23 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h18 & ~io_writeMask_1_valid;
-  wire        _valid_T_188 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h18;
-  wire        valid_3_23 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h18 & ~io_writeMask_3_valid;
+    (_valid_T_132 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_134 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_22 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_23_T = {_valid_T_132, _valid_T_134, valid_2_22};
+  wire        _valid_T_138 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h18;
+  wire        _valid_T_140 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h18;
+  wire        valid_2_23 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h18 & ~io_writeMask_2_valid;
   wire [31:0] data_23 =
-    (_valid_T_184 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_23 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_188 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_23 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_24_T = {_valid_T_184, valid_1_23, _valid_T_188, valid_3_23};
-  wire        _valid_T_192 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h19;
-  wire        valid_1_24 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h19 & ~io_writeMask_1_valid;
-  wire        _valid_T_196 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h19;
-  wire        valid_3_24 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h19 & ~io_writeMask_3_valid;
+    (_valid_T_138 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_140 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_23 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_24_T = {_valid_T_138, _valid_T_140, valid_2_23};
+  wire        _valid_T_144 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h19;
+  wire        _valid_T_146 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h19;
+  wire        valid_2_24 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h19 & ~io_writeMask_2_valid;
   wire [31:0] data_24 =
-    (_valid_T_192 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_24 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_196 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_24 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_25_T = {_valid_T_192, valid_1_24, _valid_T_196, valid_3_24};
-  wire        _valid_T_200 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1A;
-  wire        valid_1_25 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1A & ~io_writeMask_1_valid;
-  wire        _valid_T_204 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1A;
-  wire        valid_3_25 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1A & ~io_writeMask_3_valid;
+    (_valid_T_144 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_146 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_24 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_25_T = {_valid_T_144, _valid_T_146, valid_2_24};
+  wire        _valid_T_150 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1A;
+  wire        _valid_T_152 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1A;
+  wire        valid_2_25 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1A & ~io_writeMask_2_valid;
   wire [31:0] data_25 =
-    (_valid_T_200 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_25 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_204 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_25 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_26_T = {_valid_T_200, valid_1_25, _valid_T_204, valid_3_25};
-  wire        _valid_T_208 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1B;
-  wire        valid_1_26 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1B & ~io_writeMask_1_valid;
-  wire        _valid_T_212 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1B;
-  wire        valid_3_26 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1B & ~io_writeMask_3_valid;
+    (_valid_T_150 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_152 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_25 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_26_T = {_valid_T_150, _valid_T_152, valid_2_25};
+  wire        _valid_T_156 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1B;
+  wire        _valid_T_158 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1B;
+  wire        valid_2_26 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1B & ~io_writeMask_2_valid;
   wire [31:0] data_26 =
-    (_valid_T_208 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_26 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_212 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_26 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_27_T = {_valid_T_208, valid_1_26, _valid_T_212, valid_3_26};
-  wire        _valid_T_216 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1C;
-  wire        valid_1_27 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1C & ~io_writeMask_1_valid;
-  wire        _valid_T_220 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1C;
-  wire        valid_3_27 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1C & ~io_writeMask_3_valid;
+    (_valid_T_156 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_158 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_26 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_27_T = {_valid_T_156, _valid_T_158, valid_2_26};
+  wire        _valid_T_162 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1C;
+  wire        _valid_T_164 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1C;
+  wire        valid_2_27 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1C & ~io_writeMask_2_valid;
   wire [31:0] data_27 =
-    (_valid_T_216 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_27 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_220 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_27 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_28_T = {_valid_T_216, valid_1_27, _valid_T_220, valid_3_27};
-  wire        _valid_T_224 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1D;
-  wire        valid_1_28 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1D & ~io_writeMask_1_valid;
-  wire        _valid_T_228 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1D;
-  wire        valid_3_28 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1D & ~io_writeMask_3_valid;
+    (_valid_T_162 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_164 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_27 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_28_T = {_valid_T_162, _valid_T_164, valid_2_27};
+  wire        _valid_T_168 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1D;
+  wire        _valid_T_170 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1D;
+  wire        valid_2_28 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1D & ~io_writeMask_2_valid;
   wire [31:0] data_28 =
-    (_valid_T_224 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_28 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_228 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_28 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_29_T = {_valid_T_224, valid_1_28, _valid_T_228, valid_3_28};
-  wire        _valid_T_232 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1E;
-  wire        valid_1_29 =
-    io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1E & ~io_writeMask_1_valid;
-  wire        _valid_T_236 = io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1E;
-  wire        valid_3_29 =
-    io_writeData_3_valid & io_writeData_3_bits_addr == 5'h1E & ~io_writeMask_3_valid;
+    (_valid_T_168 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_170 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_28 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_29_T = {_valid_T_168, _valid_T_170, valid_2_28};
+  wire        _valid_T_174 = io_writeData_0_valid & io_writeData_0_bits_addr == 5'h1E;
+  wire        _valid_T_176 = io_writeData_1_valid & io_writeData_1_bits_addr == 5'h1E;
+  wire        valid_2_29 =
+    io_writeData_2_valid & io_writeData_2_bits_addr == 5'h1E & ~io_writeMask_2_valid;
   wire [31:0] data_29 =
-    (_valid_T_232 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_29 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_236 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_29 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_30_T = {_valid_T_232, valid_1_29, _valid_T_236, valid_3_29};
-  wire        _valid_T_240 = io_writeData_0_valid & (&io_writeData_0_bits_addr);
-  wire        valid_1_30 =
-    io_writeData_1_valid & (&io_writeData_1_bits_addr) & ~io_writeMask_1_valid;
-  wire        _valid_T_244 = io_writeData_2_valid & (&io_writeData_2_bits_addr);
-  wire        valid_3_30 =
-    io_writeData_3_valid & (&io_writeData_3_bits_addr) & ~io_writeMask_3_valid;
+    (_valid_T_174 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_176 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_29 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_30_T = {_valid_T_174, _valid_T_176, valid_2_29};
+  wire        _valid_T_180 = io_writeData_0_valid & (&io_writeData_0_bits_addr);
+  wire        _valid_T_182 = io_writeData_1_valid & (&io_writeData_1_bits_addr);
+  wire        valid_2_30 =
+    io_writeData_2_valid & (&io_writeData_2_bits_addr) & ~io_writeMask_2_valid;
   wire [31:0] data_30 =
-    (_valid_T_240 ? io_writeData_0_bits_data : 32'h0)
-    | (valid_1_30 ? io_writeData_1_bits_data : 32'h0)
-    | (_valid_T_244 ? io_writeData_2_bits_data : 32'h0)
-    | (valid_3_30 ? io_writeData_3_bits_data : 32'h0);
-  wire [3:0]  _writeValid_31_T = {_valid_T_240, valid_1_30, _valid_T_244, valid_3_30};
+    (_valid_T_180 ? io_writeData_0_bits_data : 32'h0)
+    | (_valid_T_182 ? io_writeData_1_bits_data : 32'h0)
+    | (valid_2_30 ? io_writeData_2_bits_data : 32'h0);
+  wire [2:0]  _writeValid_31_T = {_valid_T_180, _valid_T_182, valid_2_30};
   wire        _wdata_0_value_1_T = io_readAddr_0_addr == 5'h1;
   wire        _wdata_0_value_2_T = io_readAddr_0_addr == 5'h2;
   wire        _wdata_0_value_3_T = io_readAddr_0_addr == 5'h3;
@@ -860,236 +738,16 @@ module Regfile(
         | (_wdata_1_value_29_T ? regfile_29 : 32'h0)
         | (_wdata_1_value_30_T ? regfile_30 : 32'h0)
         | ((&io_readAddr_1_addr) ? regfile_31 : 32'h0);
-  wire        _wdata_2_value_1_T = io_readAddr_2_addr == 5'h1;
-  wire        _wdata_2_value_2_T = io_readAddr_2_addr == 5'h2;
-  wire        _wdata_2_value_3_T = io_readAddr_2_addr == 5'h3;
-  wire        _wdata_2_value_4_T = io_readAddr_2_addr == 5'h4;
-  wire        _wdata_2_value_5_T = io_readAddr_2_addr == 5'h5;
-  wire        _wdata_2_value_6_T = io_readAddr_2_addr == 5'h6;
-  wire        _wdata_2_value_7_T = io_readAddr_2_addr == 5'h7;
-  wire        _wdata_2_value_8_T = io_readAddr_2_addr == 5'h8;
-  wire        _wdata_2_value_9_T = io_readAddr_2_addr == 5'h9;
-  wire        _wdata_2_value_10_T = io_readAddr_2_addr == 5'hA;
-  wire        _wdata_2_value_11_T = io_readAddr_2_addr == 5'hB;
-  wire        _wdata_2_value_12_T = io_readAddr_2_addr == 5'hC;
-  wire        _wdata_2_value_13_T = io_readAddr_2_addr == 5'hD;
-  wire        _wdata_2_value_14_T = io_readAddr_2_addr == 5'hE;
-  wire        _wdata_2_value_15_T = io_readAddr_2_addr == 5'hF;
-  wire        _wdata_2_value_16_T = io_readAddr_2_addr == 5'h10;
-  wire        _wdata_2_value_17_T = io_readAddr_2_addr == 5'h11;
-  wire        _wdata_2_value_18_T = io_readAddr_2_addr == 5'h12;
-  wire        _wdata_2_value_19_T = io_readAddr_2_addr == 5'h13;
-  wire        _wdata_2_value_20_T = io_readAddr_2_addr == 5'h14;
-  wire        _wdata_2_value_21_T = io_readAddr_2_addr == 5'h15;
-  wire        _wdata_2_value_22_T = io_readAddr_2_addr == 5'h16;
-  wire        _wdata_2_value_23_T = io_readAddr_2_addr == 5'h17;
-  wire        _wdata_2_value_24_T = io_readAddr_2_addr == 5'h18;
-  wire        _wdata_2_value_25_T = io_readAddr_2_addr == 5'h19;
-  wire        _wdata_2_value_26_T = io_readAddr_2_addr == 5'h1A;
-  wire        _wdata_2_value_27_T = io_readAddr_2_addr == 5'h1B;
-  wire        _wdata_2_value_28_T = io_readAddr_2_addr == 5'h1C;
-  wire        _wdata_2_value_29_T = io_readAddr_2_addr == 5'h1D;
-  wire        _wdata_2_value_30_T = io_readAddr_2_addr == 5'h1E;
-  wire [31:0] rdata_2_value_5_0 =
-    (_wdata_2_value_1_T ? regfile_1 : 32'h0) | (_wdata_2_value_2_T ? regfile_2 : 32'h0)
-    | (_wdata_2_value_3_T ? regfile_3 : 32'h0) | (_wdata_2_value_4_T ? regfile_4 : 32'h0)
-    | (_wdata_2_value_5_T ? regfile_5 : 32'h0) | (_wdata_2_value_6_T ? regfile_6 : 32'h0)
-    | (_wdata_2_value_7_T ? regfile_7 : 32'h0) | (_wdata_2_value_8_T ? regfile_8 : 32'h0)
-    | (_wdata_2_value_9_T ? regfile_9 : 32'h0)
-    | (_wdata_2_value_10_T ? regfile_10 : 32'h0)
-    | (_wdata_2_value_11_T ? regfile_11 : 32'h0)
-    | (_wdata_2_value_12_T ? regfile_12 : 32'h0)
-    | (_wdata_2_value_13_T ? regfile_13 : 32'h0)
-    | (_wdata_2_value_14_T ? regfile_14 : 32'h0)
-    | (_wdata_2_value_15_T ? regfile_15 : 32'h0)
-    | (_wdata_2_value_16_T ? regfile_16 : 32'h0)
-    | (_wdata_2_value_17_T ? regfile_17 : 32'h0)
-    | (_wdata_2_value_18_T ? regfile_18 : 32'h0)
-    | (_wdata_2_value_19_T ? regfile_19 : 32'h0)
-    | (_wdata_2_value_20_T ? regfile_20 : 32'h0)
-    | (_wdata_2_value_21_T ? regfile_21 : 32'h0)
-    | (_wdata_2_value_22_T ? regfile_22 : 32'h0)
-    | (_wdata_2_value_23_T ? regfile_23 : 32'h0)
-    | (_wdata_2_value_24_T ? regfile_24 : 32'h0)
-    | (_wdata_2_value_25_T ? regfile_25 : 32'h0)
-    | (_wdata_2_value_26_T ? regfile_26 : 32'h0)
-    | (_wdata_2_value_27_T ? regfile_27 : 32'h0)
-    | (_wdata_2_value_28_T ? regfile_28 : 32'h0)
-    | (_wdata_2_value_29_T ? regfile_29 : 32'h0)
-    | (_wdata_2_value_30_T ? regfile_30 : 32'h0)
-    | ((&io_readAddr_2_addr) ? regfile_31 : 32'h0);
-  wire [31:0] rwdata_2 =
-    io_readAddr_2_addr == 5'h0 | _wdata_2_value_1_T & (|_writeValid_1_T)
-    | _wdata_2_value_2_T & (|_writeValid_2_T) | _wdata_2_value_3_T & (|_writeValid_3_T)
-    | _wdata_2_value_4_T & (|_writeValid_4_T) | _wdata_2_value_5_T & (|_writeValid_5_T)
-    | _wdata_2_value_6_T & (|_writeValid_6_T) | _wdata_2_value_7_T & (|_writeValid_7_T)
-    | _wdata_2_value_8_T & (|_writeValid_8_T) | _wdata_2_value_9_T & (|_writeValid_9_T)
-    | _wdata_2_value_10_T & (|_writeValid_10_T) | _wdata_2_value_11_T
-    & (|_writeValid_11_T) | _wdata_2_value_12_T & (|_writeValid_12_T)
-    | _wdata_2_value_13_T & (|_writeValid_13_T) | _wdata_2_value_14_T
-    & (|_writeValid_14_T) | _wdata_2_value_15_T & (|_writeValid_15_T)
-    | _wdata_2_value_16_T & (|_writeValid_16_T) | _wdata_2_value_17_T
-    & (|_writeValid_17_T) | _wdata_2_value_18_T & (|_writeValid_18_T)
-    | _wdata_2_value_19_T & (|_writeValid_19_T) | _wdata_2_value_20_T
-    & (|_writeValid_20_T) | _wdata_2_value_21_T & (|_writeValid_21_T)
-    | _wdata_2_value_22_T & (|_writeValid_22_T) | _wdata_2_value_23_T
-    & (|_writeValid_23_T) | _wdata_2_value_24_T & (|_writeValid_24_T)
-    | _wdata_2_value_25_T & (|_writeValid_25_T) | _wdata_2_value_26_T
-    & (|_writeValid_26_T) | _wdata_2_value_27_T & (|_writeValid_27_T)
-    | _wdata_2_value_28_T & (|_writeValid_28_T) | _wdata_2_value_29_T
-    & (|_writeValid_29_T) | _wdata_2_value_30_T & (|_writeValid_30_T)
-    | (&io_readAddr_2_addr) & (|_writeValid_31_T)
-      ? (_wdata_2_value_1_T ? data : 32'h0) | (_wdata_2_value_2_T ? data_1 : 32'h0)
-        | (_wdata_2_value_3_T ? data_2 : 32'h0) | (_wdata_2_value_4_T ? data_3 : 32'h0)
-        | (_wdata_2_value_5_T ? data_4 : 32'h0) | (_wdata_2_value_6_T ? data_5 : 32'h0)
-        | (_wdata_2_value_7_T ? data_6 : 32'h0) | (_wdata_2_value_8_T ? data_7 : 32'h0)
-        | (_wdata_2_value_9_T ? data_8 : 32'h0) | (_wdata_2_value_10_T ? data_9 : 32'h0)
-        | (_wdata_2_value_11_T ? data_10 : 32'h0)
-        | (_wdata_2_value_12_T ? data_11 : 32'h0)
-        | (_wdata_2_value_13_T ? data_12 : 32'h0)
-        | (_wdata_2_value_14_T ? data_13 : 32'h0)
-        | (_wdata_2_value_15_T ? data_14 : 32'h0)
-        | (_wdata_2_value_16_T ? data_15 : 32'h0)
-        | (_wdata_2_value_17_T ? data_16 : 32'h0)
-        | (_wdata_2_value_18_T ? data_17 : 32'h0)
-        | (_wdata_2_value_19_T ? data_18 : 32'h0)
-        | (_wdata_2_value_20_T ? data_19 : 32'h0)
-        | (_wdata_2_value_21_T ? data_20 : 32'h0)
-        | (_wdata_2_value_22_T ? data_21 : 32'h0)
-        | (_wdata_2_value_23_T ? data_22 : 32'h0)
-        | (_wdata_2_value_24_T ? data_23 : 32'h0)
-        | (_wdata_2_value_25_T ? data_24 : 32'h0)
-        | (_wdata_2_value_26_T ? data_25 : 32'h0)
-        | (_wdata_2_value_27_T ? data_26 : 32'h0)
-        | (_wdata_2_value_28_T ? data_27 : 32'h0)
-        | (_wdata_2_value_29_T ? data_28 : 32'h0)
-        | (_wdata_2_value_30_T ? data_29 : 32'h0)
-        | ((&io_readAddr_2_addr) ? data_30 : 32'h0)
-      : rdata_2_value_5_0;
-  wire        _wdata_3_value_1_T = io_readAddr_3_addr == 5'h1;
-  wire        _wdata_3_value_2_T = io_readAddr_3_addr == 5'h2;
-  wire        _wdata_3_value_3_T = io_readAddr_3_addr == 5'h3;
-  wire        _wdata_3_value_4_T = io_readAddr_3_addr == 5'h4;
-  wire        _wdata_3_value_5_T = io_readAddr_3_addr == 5'h5;
-  wire        _wdata_3_value_6_T = io_readAddr_3_addr == 5'h6;
-  wire        _wdata_3_value_7_T = io_readAddr_3_addr == 5'h7;
-  wire        _wdata_3_value_8_T = io_readAddr_3_addr == 5'h8;
-  wire        _wdata_3_value_9_T = io_readAddr_3_addr == 5'h9;
-  wire        _wdata_3_value_10_T = io_readAddr_3_addr == 5'hA;
-  wire        _wdata_3_value_11_T = io_readAddr_3_addr == 5'hB;
-  wire        _wdata_3_value_12_T = io_readAddr_3_addr == 5'hC;
-  wire        _wdata_3_value_13_T = io_readAddr_3_addr == 5'hD;
-  wire        _wdata_3_value_14_T = io_readAddr_3_addr == 5'hE;
-  wire        _wdata_3_value_15_T = io_readAddr_3_addr == 5'hF;
-  wire        _wdata_3_value_16_T = io_readAddr_3_addr == 5'h10;
-  wire        _wdata_3_value_17_T = io_readAddr_3_addr == 5'h11;
-  wire        _wdata_3_value_18_T = io_readAddr_3_addr == 5'h12;
-  wire        _wdata_3_value_19_T = io_readAddr_3_addr == 5'h13;
-  wire        _wdata_3_value_20_T = io_readAddr_3_addr == 5'h14;
-  wire        _wdata_3_value_21_T = io_readAddr_3_addr == 5'h15;
-  wire        _wdata_3_value_22_T = io_readAddr_3_addr == 5'h16;
-  wire        _wdata_3_value_23_T = io_readAddr_3_addr == 5'h17;
-  wire        _wdata_3_value_24_T = io_readAddr_3_addr == 5'h18;
-  wire        _wdata_3_value_25_T = io_readAddr_3_addr == 5'h19;
-  wire        _wdata_3_value_26_T = io_readAddr_3_addr == 5'h1A;
-  wire        _wdata_3_value_27_T = io_readAddr_3_addr == 5'h1B;
-  wire        _wdata_3_value_28_T = io_readAddr_3_addr == 5'h1C;
-  wire        _wdata_3_value_29_T = io_readAddr_3_addr == 5'h1D;
-  wire        _wdata_3_value_30_T = io_readAddr_3_addr == 5'h1E;
-  wire [31:0] rwdata_3 =
-    io_readAddr_3_addr == 5'h0 | _wdata_3_value_1_T & (|_writeValid_1_T)
-    | _wdata_3_value_2_T & (|_writeValid_2_T) | _wdata_3_value_3_T & (|_writeValid_3_T)
-    | _wdata_3_value_4_T & (|_writeValid_4_T) | _wdata_3_value_5_T & (|_writeValid_5_T)
-    | _wdata_3_value_6_T & (|_writeValid_6_T) | _wdata_3_value_7_T & (|_writeValid_7_T)
-    | _wdata_3_value_8_T & (|_writeValid_8_T) | _wdata_3_value_9_T & (|_writeValid_9_T)
-    | _wdata_3_value_10_T & (|_writeValid_10_T) | _wdata_3_value_11_T
-    & (|_writeValid_11_T) | _wdata_3_value_12_T & (|_writeValid_12_T)
-    | _wdata_3_value_13_T & (|_writeValid_13_T) | _wdata_3_value_14_T
-    & (|_writeValid_14_T) | _wdata_3_value_15_T & (|_writeValid_15_T)
-    | _wdata_3_value_16_T & (|_writeValid_16_T) | _wdata_3_value_17_T
-    & (|_writeValid_17_T) | _wdata_3_value_18_T & (|_writeValid_18_T)
-    | _wdata_3_value_19_T & (|_writeValid_19_T) | _wdata_3_value_20_T
-    & (|_writeValid_20_T) | _wdata_3_value_21_T & (|_writeValid_21_T)
-    | _wdata_3_value_22_T & (|_writeValid_22_T) | _wdata_3_value_23_T
-    & (|_writeValid_23_T) | _wdata_3_value_24_T & (|_writeValid_24_T)
-    | _wdata_3_value_25_T & (|_writeValid_25_T) | _wdata_3_value_26_T
-    & (|_writeValid_26_T) | _wdata_3_value_27_T & (|_writeValid_27_T)
-    | _wdata_3_value_28_T & (|_writeValid_28_T) | _wdata_3_value_29_T
-    & (|_writeValid_29_T) | _wdata_3_value_30_T & (|_writeValid_30_T)
-    | (&io_readAddr_3_addr) & (|_writeValid_31_T)
-      ? (_wdata_3_value_1_T ? data : 32'h0) | (_wdata_3_value_2_T ? data_1 : 32'h0)
-        | (_wdata_3_value_3_T ? data_2 : 32'h0) | (_wdata_3_value_4_T ? data_3 : 32'h0)
-        | (_wdata_3_value_5_T ? data_4 : 32'h0) | (_wdata_3_value_6_T ? data_5 : 32'h0)
-        | (_wdata_3_value_7_T ? data_6 : 32'h0) | (_wdata_3_value_8_T ? data_7 : 32'h0)
-        | (_wdata_3_value_9_T ? data_8 : 32'h0) | (_wdata_3_value_10_T ? data_9 : 32'h0)
-        | (_wdata_3_value_11_T ? data_10 : 32'h0)
-        | (_wdata_3_value_12_T ? data_11 : 32'h0)
-        | (_wdata_3_value_13_T ? data_12 : 32'h0)
-        | (_wdata_3_value_14_T ? data_13 : 32'h0)
-        | (_wdata_3_value_15_T ? data_14 : 32'h0)
-        | (_wdata_3_value_16_T ? data_15 : 32'h0)
-        | (_wdata_3_value_17_T ? data_16 : 32'h0)
-        | (_wdata_3_value_18_T ? data_17 : 32'h0)
-        | (_wdata_3_value_19_T ? data_18 : 32'h0)
-        | (_wdata_3_value_20_T ? data_19 : 32'h0)
-        | (_wdata_3_value_21_T ? data_20 : 32'h0)
-        | (_wdata_3_value_22_T ? data_21 : 32'h0)
-        | (_wdata_3_value_23_T ? data_22 : 32'h0)
-        | (_wdata_3_value_24_T ? data_23 : 32'h0)
-        | (_wdata_3_value_25_T ? data_24 : 32'h0)
-        | (_wdata_3_value_26_T ? data_25 : 32'h0)
-        | (_wdata_3_value_27_T ? data_26 : 32'h0)
-        | (_wdata_3_value_28_T ? data_27 : 32'h0)
-        | (_wdata_3_value_29_T ? data_28 : 32'h0)
-        | (_wdata_3_value_30_T ? data_29 : 32'h0)
-        | ((&io_readAddr_3_addr) ? data_30 : 32'h0)
-      : (_wdata_3_value_1_T ? regfile_1 : 32'h0)
-        | (_wdata_3_value_2_T ? regfile_2 : 32'h0)
-        | (_wdata_3_value_3_T ? regfile_3 : 32'h0)
-        | (_wdata_3_value_4_T ? regfile_4 : 32'h0)
-        | (_wdata_3_value_5_T ? regfile_5 : 32'h0)
-        | (_wdata_3_value_6_T ? regfile_6 : 32'h0)
-        | (_wdata_3_value_7_T ? regfile_7 : 32'h0)
-        | (_wdata_3_value_8_T ? regfile_8 : 32'h0)
-        | (_wdata_3_value_9_T ? regfile_9 : 32'h0)
-        | (_wdata_3_value_10_T ? regfile_10 : 32'h0)
-        | (_wdata_3_value_11_T ? regfile_11 : 32'h0)
-        | (_wdata_3_value_12_T ? regfile_12 : 32'h0)
-        | (_wdata_3_value_13_T ? regfile_13 : 32'h0)
-        | (_wdata_3_value_14_T ? regfile_14 : 32'h0)
-        | (_wdata_3_value_15_T ? regfile_15 : 32'h0)
-        | (_wdata_3_value_16_T ? regfile_16 : 32'h0)
-        | (_wdata_3_value_17_T ? regfile_17 : 32'h0)
-        | (_wdata_3_value_18_T ? regfile_18 : 32'h0)
-        | (_wdata_3_value_19_T ? regfile_19 : 32'h0)
-        | (_wdata_3_value_20_T ? regfile_20 : 32'h0)
-        | (_wdata_3_value_21_T ? regfile_21 : 32'h0)
-        | (_wdata_3_value_22_T ? regfile_22 : 32'h0)
-        | (_wdata_3_value_23_T ? regfile_23 : 32'h0)
-        | (_wdata_3_value_24_T ? regfile_24 : 32'h0)
-        | (_wdata_3_value_25_T ? regfile_25 : 32'h0)
-        | (_wdata_3_value_26_T ? regfile_26 : 32'h0)
-        | (_wdata_3_value_27_T ? regfile_27 : 32'h0)
-        | (_wdata_3_value_28_T ? regfile_28 : 32'h0)
-        | (_wdata_3_value_29_T ? regfile_29 : 32'h0)
-        | (_wdata_3_value_30_T ? regfile_30 : 32'h0)
-        | ((&io_readAddr_3_addr) ? regfile_31 : 32'h0);
   wire [31:0] busAddr_0 =
     io_busAddr_0_bypass
       ? rwdata_0
       : io_busAddr_0_immen ? rdata_0_value_5_0 + io_busAddr_0_immed : rdata_0_value_5_0;
-  wire [31:0] busAddr_1 =
-    io_busAddr_1_bypass ? rwdata_2 : rdata_2_value_5_0 + io_busAddr_1_immed;
   reg         write_fail;
   reg         write_fail_1;
   reg         write_fail_2;
-  reg         write_fail_3;
-  reg         write_fail_4;
-  reg         write_fail_5;
   reg         scoreboard_error;
   wire [31:0] scoreboard_set =
-    (io_writeAddr_0_valid ? 32'h1 << io_writeAddr_0_addr : 32'h0)
-    | (io_writeAddr_1_valid ? 32'h1 << io_writeAddr_1_addr : 32'h0);
+    io_writeAddr_0_valid ? 32'h1 << io_writeAddr_0_addr : 32'h0;
   wire [31:0] scoreboard_clr = {scoreboard_clr0, 1'h0};
   always @(posedge clock or posedge reset) begin
     if (reset) begin
@@ -1127,18 +785,11 @@ module Regfile(
       scoreboard <= 32'h0;
       readDataReady_0 <= 1'h0;
       readDataReady_1 <= 1'h0;
-      readDataReady_2 <= 1'h0;
-      readDataReady_3 <= 1'h0;
       readDataBits_0 <= 32'h0;
       readDataBits_1 <= 32'h0;
-      readDataBits_2 <= 32'h0;
-      readDataBits_3 <= 32'h0;
       write_fail <= 1'h0;
       write_fail_1 <= 1'h0;
       write_fail_2 <= 1'h0;
-      write_fail_3 <= 1'h0;
-      write_fail_4 <= 1'h0;
-      write_fail_5 <= 1'h0;
       scoreboard_error <= 1'h0;
     end
     else begin
@@ -1208,8 +859,6 @@ module Regfile(
         scoreboard <= {scoreboard[31:1] & ~scoreboard_clr0 | scoreboard_set[31:1], 1'h0};
       readDataReady_0 <= io_readAddr_0_valid | io_readSet_0_valid;
       readDataReady_1 <= io_readAddr_1_valid | io_readSet_1_valid;
-      readDataReady_2 <= io_readAddr_2_valid | io_readSet_2_valid;
-      readDataReady_3 <= io_readAddr_3_valid | io_readSet_3_valid;
       if (io_readSet_0_valid)
         readDataBits_0 <= io_readSet_0_value;
       else if (io_readAddr_0_valid)
@@ -1218,14 +867,6 @@ module Regfile(
         readDataBits_1 <= io_readSet_1_value;
       else if (io_readAddr_1_valid)
         readDataBits_1 <= rwdata_1;
-      if (io_readSet_2_valid)
-        readDataBits_2 <= io_readSet_2_value;
-      else if (io_readAddr_2_valid)
-        readDataBits_2 <= rwdata_2;
-      if (io_readSet_3_valid)
-        readDataBits_3 <= io_readSet_3_value;
-      else if (io_readAddr_3_valid)
-        readDataBits_3 <= rwdata_3;
       write_fail <=
         io_writeData_0_valid & io_writeData_1_valid
         & io_writeData_0_bits_addr == io_writeData_1_bits_addr
@@ -1235,21 +876,9 @@ module Regfile(
         & io_writeData_0_bits_addr == io_writeData_2_bits_addr
         & (|io_writeData_0_bits_addr);
       write_fail_2 <=
-        io_writeData_0_valid & io_writeData_3_valid
-        & io_writeData_0_bits_addr == io_writeData_3_bits_addr
-        & (|io_writeData_0_bits_addr);
-      write_fail_3 <=
         io_writeData_1_valid & io_writeData_2_valid
         & io_writeData_1_bits_addr == io_writeData_2_bits_addr
         & (|io_writeData_1_bits_addr);
-      write_fail_4 <=
-        io_writeData_1_valid & io_writeData_3_valid
-        & io_writeData_1_bits_addr == io_writeData_3_bits_addr
-        & (|io_writeData_1_bits_addr);
-      write_fail_5 <=
-        io_writeData_2_valid & io_writeData_3_valid
-        & io_writeData_2_bits_addr == io_writeData_3_bits_addr
-        & (|io_writeData_2_bits_addr);
       scoreboard_error <= (scoreboard & scoreboard_clr) != scoreboard_clr;
     end
   end // always @(posedge, posedge)
@@ -1257,13 +886,13 @@ module Regfile(
     `ifdef FIRRTL_BEFORE_INITIAL
       `FIRRTL_BEFORE_INITIAL
     `endif // FIRRTL_BEFORE_INITIAL
-    logic [31:0] _RANDOM[0:37];
+    logic [31:0] _RANDOM[0:35];
     initial begin
       `ifdef INIT_RANDOM_PROLOG_
         `INIT_RANDOM_PROLOG_
       `endif // INIT_RANDOM_PROLOG_
       `ifdef RANDOMIZE_REG_INIT
-        for (logic [5:0] i = 6'h0; i < 6'h26; i += 6'h1) begin
+        for (logic [5:0] i = 6'h0; i < 6'h24; i += 6'h1) begin
           _RANDOM[i] = `RANDOM;
         end
         regfile_1 = _RANDOM[6'h1];
@@ -1300,19 +929,12 @@ module Regfile(
         scoreboard = _RANDOM[6'h20];
         readDataReady_0 = _RANDOM[6'h21][0];
         readDataReady_1 = _RANDOM[6'h21][1];
-        readDataReady_2 = _RANDOM[6'h21][2];
-        readDataReady_3 = _RANDOM[6'h21][3];
-        readDataBits_0 = {_RANDOM[6'h21][31:4], _RANDOM[6'h22][3:0]};
-        readDataBits_1 = {_RANDOM[6'h22][31:4], _RANDOM[6'h23][3:0]};
-        readDataBits_2 = {_RANDOM[6'h23][31:4], _RANDOM[6'h24][3:0]};
-        readDataBits_3 = {_RANDOM[6'h24][31:4], _RANDOM[6'h25][3:0]};
-        write_fail = _RANDOM[6'h25][4];
-        write_fail_1 = _RANDOM[6'h25][5];
-        write_fail_2 = _RANDOM[6'h25][6];
-        write_fail_3 = _RANDOM[6'h25][7];
-        write_fail_4 = _RANDOM[6'h25][8];
-        write_fail_5 = _RANDOM[6'h25][9];
-        scoreboard_error = _RANDOM[6'h25][10];
+        readDataBits_0 = {_RANDOM[6'h21][31:2], _RANDOM[6'h22][1:0]};
+        readDataBits_1 = {_RANDOM[6'h22][31:2], _RANDOM[6'h23][1:0]};
+        write_fail = _RANDOM[6'h23][2];
+        write_fail_1 = _RANDOM[6'h23][3];
+        write_fail_2 = _RANDOM[6'h23][4];
+        scoreboard_error = _RANDOM[6'h23][5];
       `endif // RANDOMIZE_REG_INIT
       if (reset) begin
         regfile_1 = 32'h0;
@@ -1349,18 +971,11 @@ module Regfile(
         scoreboard = 32'h0;
         readDataReady_0 = 1'h0;
         readDataReady_1 = 1'h0;
-        readDataReady_2 = 1'h0;
-        readDataReady_3 = 1'h0;
         readDataBits_0 = 32'h0;
         readDataBits_1 = 32'h0;
-        readDataBits_2 = 32'h0;
-        readDataBits_3 = 32'h0;
         write_fail = 1'h0;
         write_fail_1 = 1'h0;
         write_fail_2 = 1'h0;
-        write_fail_3 = 1'h0;
-        write_fail_4 = 1'h0;
-        write_fail_5 = 1'h0;
         scoreboard_error = 1'h0;
       end
     end // initial
@@ -1369,19 +984,12 @@ module Regfile(
     `endif // FIRRTL_AFTER_INITIAL
   `endif // ENABLE_INITIAL_REG_
   assign io_target_0_data = busAddr_0;
-  assign io_target_1_data = busAddr_1;
   assign io_busPort_addr_0 = busAddr_0;
-  assign io_busPort_addr_1 = busAddr_1;
   assign io_busPort_data_0 = io_readSet_1_valid ? io_readSet_1_value : rwdata_1;
-  assign io_busPort_data_1 = io_readSet_3_valid ? io_readSet_3_value : rwdata_3;
   assign io_readData_0_valid = readDataReady_0;
   assign io_readData_0_data = readDataBits_0;
   assign io_readData_1_valid = readDataReady_1;
   assign io_readData_1_data = readDataBits_1;
-  assign io_readData_2_valid = readDataReady_2;
-  assign io_readData_2_data = readDataBits_2;
-  assign io_readData_3_valid = readDataReady_3;
-  assign io_readData_3_data = readDataBits_3;
   assign io_scoreboard_regd = scoreboard;
   assign io_scoreboard_comb = scoreboard & {~scoreboard_clr0, 1'h1};
   assign io_rfwriteCount =
@@ -1415,11 +1023,7 @@ module Regfile(
               + {1'h0,
                  {1'h0, {1'h0, |_writeValid_28_T} + {1'h0, |_writeValid_29_T}}
                    + {1'h0, {1'h0, |_writeValid_30_T} + {1'h0, |_writeValid_31_T}}}}}
-    + {4'h0,
-       {1'h0, io_writeData_0_valid & io_writeData_0_bits_addr == 5'h0}
-         + {1'h0,
-            io_writeData_1_valid & io_writeData_1_bits_addr == 5'h0
-              & ~io_writeMask_1_valid}} - 6'h1;
+    + {5'h0, io_writeData_0_valid & io_writeData_0_bits_addr == 5'h0} - 6'h1;
 endmodule
 
 module FetchControl(
@@ -2255,15 +1859,8 @@ module UncachedFetch(
   output [31:0]  io_inst_lanes_0_bits_addr,
                  io_inst_lanes_0_bits_inst,
   output         io_inst_lanes_0_bits_brchFwd,
-  input          io_inst_lanes_1_ready,
-  output         io_inst_lanes_1_valid,
-  output [31:0]  io_inst_lanes_1_bits_addr,
-                 io_inst_lanes_1_bits_inst,
-  output         io_inst_lanes_1_bits_brchFwd,
   input          io_branch_0_valid,
   input  [31:0]  io_branch_0_value,
-  input          io_branch_1_valid,
-  input  [31:0]  io_branch_1_value,
   input          io_iflush_valid,
   input  [31:0]  io_iflush_pcNext,
   output [31:0]  io_pc,
@@ -2295,7 +1892,6 @@ module UncachedFetch(
   wire [31:0] _ctrl_io_bufferRequest_bits_3_addr;
   wire [31:0] _ctrl_io_bufferRequest_bits_3_inst;
   wire        _ctrl_io_bufferRequest_bits_3_brchFwd;
-  wire        branch_valid = io_branch_0_valid | io_branch_1_valid;
   reg  [31:0] pc;
   always @(posedge clock or posedge reset) begin
     if (reset)
@@ -2330,11 +1926,8 @@ module UncachedFetch(
     .io_csr_value_0                  (io_csr_value_0),
     .io_iflush_valid                 (io_iflush_valid),
     .io_iflush_bits                  (io_iflush_pcNext),
-    .io_branch_valid                 (branch_valid),
-    .io_branch_bits
-      (io_branch_0_valid
-         ? io_branch_0_value
-         : io_branch_1_valid ? io_branch_1_value : 32'h0),
+    .io_branch_valid                 (io_branch_0_valid),
+    .io_branch_bits                  (io_branch_0_valid ? io_branch_0_value : 32'h0),
     .io_fetchData_valid              (_fetcher_io_fetch_valid),
     .io_fetchData_bits_addr          (_fetcher_io_fetch_bits_addr),
     .io_fetchData_bits_inst_0        (_fetcher_io_fetch_bits_inst_0),
@@ -2399,11 +1992,11 @@ module UncachedFetch(
     .io_out_0_bits_addr       (_instructionBuffer_io_out_0_bits_addr),
     .io_out_0_bits_inst       (io_inst_lanes_0_bits_inst),
     .io_out_0_bits_brchFwd    (io_inst_lanes_0_bits_brchFwd),
-    .io_out_1_ready           (io_inst_lanes_1_ready),
-    .io_out_1_valid           (io_inst_lanes_1_valid),
-    .io_out_1_bits_addr       (io_inst_lanes_1_bits_addr),
-    .io_out_1_bits_inst       (io_inst_lanes_1_bits_inst),
-    .io_out_1_bits_brchFwd    (io_inst_lanes_1_bits_brchFwd),
+    .io_out_1_ready           (1'h0),
+    .io_out_1_valid           (/* unused */),
+    .io_out_1_bits_addr       (/* unused */),
+    .io_out_1_bits_inst       (/* unused */),
+    .io_out_1_bits_brchFwd    (/* unused */),
     .io_out_2_ready           (1'h0),
     .io_out_2_valid           (/* unused */),
     .io_out_2_bits_addr       (/* unused */),
@@ -2414,7 +2007,7 @@ module UncachedFetch(
     .io_out_3_bits_addr       (/* unused */),
     .io_out_3_bits_inst       (/* unused */),
     .io_out_3_bits_brchFwd    (/* unused */),
-    .io_flush                 (io_iflush_valid | branch_valid),
+    .io_flush                 (io_iflush_valid | io_branch_0_valid),
     .io_nEnqueued             (/* unused */),
     .io_nSpace                (_instructionBuffer_io_nSpace)
   );
@@ -2817,70 +2410,39 @@ module DispatchV2(
   input         io_branchTaken,
   output        io_csrFault_0,
                 io_jalFault_0,
-                io_jalFault_1,
                 io_jalrFault_0,
-                io_jalrFault_1,
                 io_bxxFault_0,
-                io_bxxFault_1,
                 io_undefFault_0,
   output [31:0] io_bruTarget_0,
-                io_bruTarget_1,
   input  [31:0] io_jalrTarget_0_data,
-                io_jalrTarget_1_data,
   input         io_interlock,
   output        io_inst_0_ready,
   input         io_inst_0_valid,
   input  [31:0] io_inst_0_bits_addr,
                 io_inst_0_bits_inst,
   input         io_inst_0_bits_brchFwd,
-  output        io_inst_1_ready,
-  input         io_inst_1_valid,
-  input  [31:0] io_inst_1_bits_addr,
-                io_inst_1_bits_inst,
-  input         io_inst_1_bits_brchFwd,
   output        io_rs1Read_0_valid,
   output [4:0]  io_rs1Read_0_addr,
-  output        io_rs1Read_1_valid,
-  output [4:0]  io_rs1Read_1_addr,
   output        io_rs1Set_0_valid,
   output [31:0] io_rs1Set_0_value,
-  output        io_rs1Set_1_valid,
-  output [31:0] io_rs1Set_1_value,
   output        io_rs2Read_0_valid,
   output [4:0]  io_rs2Read_0_addr,
-  output        io_rs2Read_1_valid,
-  output [4:0]  io_rs2Read_1_addr,
   output        io_rs2Set_0_valid,
   output [31:0] io_rs2Set_0_value,
-  output        io_rs2Set_1_valid,
-  output [31:0] io_rs2Set_1_value,
   output        io_rdMark_0_valid,
   output [4:0]  io_rdMark_0_addr,
-  output        io_rdMark_1_valid,
-  output [4:0]  io_rdMark_1_addr,
   output        io_busRead_0_bypass,
                 io_busRead_0_immen,
   output [31:0] io_busRead_0_immed,
-  output        io_busRead_1_bypass,
-  output [31:0] io_busRead_1_immed,
   output        io_alu_0_valid,
   output [4:0]  io_alu_0_bits_addr,
                 io_alu_0_bits_op,
-  output        io_alu_1_valid,
-  output [4:0]  io_alu_1_bits_addr,
-                io_alu_1_bits_op,
   output        io_bru_0_valid,
                 io_bru_0_bits_fwd,
   output [3:0]  io_bru_0_bits_op,
   output [31:0] io_bru_0_bits_pc,
                 io_bru_0_bits_target,
   output [4:0]  io_bru_0_bits_link,
-  output        io_bru_1_valid,
-                io_bru_1_bits_fwd,
-  output [3:0]  io_bru_1_bits_op,
-  output [31:0] io_bru_1_bits_pc,
-                io_bru_1_bits_target,
-  output [4:0]  io_bru_1_bits_link,
   output        io_csr_valid,
   output [4:0]  io_csr_bits_addr,
   output [11:0] io_csr_bits_index,
@@ -2891,20 +2453,10 @@ module DispatchV2(
   output [4:0]  io_lsu_0_bits_addr,
                 io_lsu_0_bits_op,
   output [31:0] io_lsu_0_bits_pc,
-  input         io_lsu_1_ready,
-  output        io_lsu_1_valid,
-                io_lsu_1_bits_store,
-  output [4:0]  io_lsu_1_bits_addr,
-                io_lsu_1_bits_op,
-  output [31:0] io_lsu_1_bits_pc,
   input  [2:0]  io_lsuQueueCapacity,
   output        io_mlu_0_valid,
   output [4:0]  io_mlu_0_bits_addr,
   output [2:0]  io_mlu_0_bits_op,
-  input         io_mlu_1_ready,
-  output        io_mlu_1_valid,
-  output [4:0]  io_mlu_1_bits_addr,
-  output [2:0]  io_mlu_1_bits_op,
   input         io_dvu_0_ready,
   output        io_dvu_0_valid,
   output [4:0]  io_dvu_0_bits_addr,
@@ -3004,87 +2556,10 @@ module DispatchV2(
      io_inst_0_bits_inst[14:0]} == 24'h200077 & (|(io_inst_0_bits_inst[19:15]));
   wire        decodedInsts_0_flushall =
     {io_inst_0_bits_inst[31:28], io_inst_0_bits_inst[24:0]} == 29'h4000077;
-  wire [19:0] _decodedInsts_d_imm12_T_5 = {20{io_inst_1_bits_inst[31]}};
-  wire        decodedInsts_1_lui = io_inst_1_bits_inst[6:0] == 7'h37;
-  wire        decodedInsts_1_auipc = io_inst_1_bits_inst[6:0] == 7'h17;
-  wire        decodedInsts_1_jal = io_inst_1_bits_inst[6:0] == 7'h6F;
-  wire [9:0]  _GEN_3 = {io_inst_1_bits_inst[14:12], io_inst_1_bits_inst[6:0]};
-  wire        decodedInsts_1_jalr = _GEN_3 == 10'h67;
-  wire        decodedInsts_1_beq = _GEN_3 == 10'h63;
-  wire        decodedInsts_1_bne = _GEN_3 == 10'hE3;
-  wire        decodedInsts_1_blt = _GEN_3 == 10'h263;
-  wire        decodedInsts_1_bge = _GEN_3 == 10'h2E3;
-  wire        decodedInsts_1_bltu = _GEN_3 == 10'h363;
-  wire        decodedInsts_1_bgeu = _GEN_3 == 10'h3E3;
-  wire        decodedInsts_1_lb = _GEN_3 == 10'h3;
-  wire        decodedInsts_1_lh = _GEN_3 == 10'h83;
-  wire        decodedInsts_1_lw = _GEN_3 == 10'h103;
-  wire        decodedInsts_1_lbu = _GEN_3 == 10'h203;
-  wire        decodedInsts_1_lhu = _GEN_3 == 10'h283;
-  wire        decodedInsts_1_sb = _GEN_3 == 10'h23;
-  wire        decodedInsts_1_sh = _GEN_3 == 10'hA3;
-  wire        decodedInsts_1_sw = _GEN_3 == 10'h123;
-  wire        decodedInsts_1_addi = _GEN_3 == 10'h13;
-  wire        decodedInsts_1_slti = _GEN_3 == 10'h113;
-  wire        decodedInsts_1_sltiu = _GEN_3 == 10'h193;
-  wire        decodedInsts_1_xori = _GEN_3 == 10'h213;
-  wire        decodedInsts_1_ori = _GEN_3 == 10'h313;
-  wire        decodedInsts_1_andi = _GEN_3 == 10'h393;
-  wire [16:0] _GEN_4 =
-    {io_inst_1_bits_inst[31:25], io_inst_1_bits_inst[14:12], io_inst_1_bits_inst[6:0]};
-  wire        decodedInsts_1_slli = _GEN_4 == 17'h93;
-  wire        decodedInsts_1_srli = _GEN_4 == 17'h293;
-  wire        decodedInsts_1_srai = _GEN_4 == 17'h8293;
-  wire        decodedInsts_1_add = _GEN_4 == 17'h33;
-  wire        decodedInsts_1_sub = _GEN_4 == 17'h8033;
-  wire        decodedInsts_1_slt = _GEN_4 == 17'h133;
-  wire        decodedInsts_1_sltu = _GEN_4 == 17'h1B3;
-  wire        decodedInsts_1_xor = _GEN_4 == 17'h233;
-  wire        decodedInsts_1_or = _GEN_4 == 17'h333;
-  wire        decodedInsts_1_and = _GEN_4 == 17'h3B3;
-  wire        decodedInsts_1_sll = _GEN_4 == 17'hB3;
-  wire        decodedInsts_1_srl = _GEN_4 == 17'h2B3;
-  wire        decodedInsts_1_sra = _GEN_4 == 17'h82B3;
-  wire        decodedInsts_1_mul = _GEN_4 == 17'h433;
-  wire        decodedInsts_1_mulh = _GEN_4 == 17'h4B3;
-  wire        decodedInsts_1_mulhsu = _GEN_4 == 17'h533;
-  wire        decodedInsts_1_mulhu = _GEN_4 == 17'h5B3;
-  wire        decodedInsts_1_andn = _GEN_4 == 17'h83B3;
-  wire        decodedInsts_1_orn = _GEN_4 == 17'h8333;
-  wire        decodedInsts_1_xnor = _GEN_4 == 17'h8233;
-  wire [21:0] _GEN_5 =
-    {io_inst_1_bits_inst[31:20], io_inst_1_bits_inst[14:12], io_inst_1_bits_inst[6:0]};
-  wire        decodedInsts_1_clz = _GEN_5 == 22'h180093;
-  wire        decodedInsts_1_ctz = _GEN_5 == 22'h180493;
-  wire        decodedInsts_1_cpop = _GEN_5 == 22'h180893;
-  wire        decodedInsts_1_max = _GEN_4 == 17'h1733;
-  wire        decodedInsts_1_maxu = _GEN_4 == 17'h17B3;
-  wire        decodedInsts_1_min = _GEN_4 == 17'h1633;
-  wire        decodedInsts_1_minu = _GEN_4 == 17'h16B3;
-  wire        decodedInsts_1_sextb = _GEN_5 == 22'h181093;
-  wire        decodedInsts_1_sexth = _GEN_5 == 22'h181493;
-  wire        decodedInsts_1_rol = _GEN_4 == 17'hC0B3;
-  wire        decodedInsts_1_ror = _GEN_4 == 17'hC2B3;
-  wire        decodedInsts_1_orcb = _GEN_5 == 22'hA1E93;
-  wire        decodedInsts_1_rev8 = _GEN_5 == 22'h1A6293;
-  wire        decodedInsts_1_zexth = _GEN_5 == 22'h20233;
-  wire        decodedInsts_1_rori = _GEN_4 == 17'hC293;
-  wire        _slot0Interlock_T = decodedInsts_0_fencei | decodedInsts_0_ebreak;
   wire        _io_rs2Read_0_valid_T_1 = decodedInsts_0_beq | decodedInsts_0_bne;
-  wire        _io_rs2Read_1_valid_T_1 = decodedInsts_1_beq | decodedInsts_1_bne;
   wire        _io_rs2Read_0_valid_T_25 = decodedInsts_0_sb | decodedInsts_0_sh;
-  wire        _io_rs2Read_1_valid_T_25 = decodedInsts_1_sb | decodedInsts_1_sh;
-  wire [31:0] rdScoreboard_0 =
-    _io_rs2Read_0_valid_T_25 | decodedInsts_0_sw | _io_rs2Read_0_valid_T_1
-    | decodedInsts_0_blt | decodedInsts_0_bge | decodedInsts_0_bltu | decodedInsts_0_bgeu
-      ? 32'h0
-      : 32'h1 << io_inst_0_bits_inst[11:7];
-  wire [31:0] comb_1 = rdScoreboard_0 | io_scoreboard_comb;
   wire        _rdMark_valid_T_5 = decodedInsts_0_lb | decodedInsts_0_lh;
-  wire        _rdMark_valid_T_26 = decodedInsts_1_lb | decodedInsts_1_lh;
-  wire [31:0] _GEN_6 = {27'h0, io_inst_0_bits_inst[24:20]};
-  wire [31:0] _GEN_7 = {27'h0, io_inst_1_bits_inst[19:15]};
-  wire [31:0] _GEN_8 = {27'h0, io_inst_1_bits_inst[24:20]};
+  wire [31:0] _GEN_3 = {27'h0, io_inst_0_bits_inst[24:20]};
   wire        _io_rs2Read_0_valid_T_6 = decodedInsts_0_add | decodedInsts_0_sub;
   wire        _io_rs2Set_0_valid_T_6 = decodedInsts_0_addi | decodedInsts_0_slti;
   wire        _io_rs2Set_0_valid_T_16 = decodedInsts_0_clz | decodedInsts_0_ctz;
@@ -3092,11 +2567,6 @@ module DispatchV2(
   wire        _io_rs2Set_0_valid_T_1 = decodedInsts_0_csrrw | decodedInsts_0_csrrs;
   wire        _io_rs2Read_0_valid_T_34 = decodedInsts_0_mul | decodedInsts_0_mulh;
   wire        _io_rs2Read_0_valid_T_38 = decodedInsts_0_div | decodedInsts_0_divu;
-  wire        _io_rs2Read_1_valid_T_6 = decodedInsts_1_add | decodedInsts_1_sub;
-  wire        _io_rs2Set_1_valid_T_6 = decodedInsts_1_addi | decodedInsts_1_slti;
-  wire        _io_rs2Set_1_valid_T_16 = decodedInsts_1_clz | decodedInsts_1_ctz;
-  wire        _io_rs2Read_1_valid_T_19 = decodedInsts_1_min | decodedInsts_1_minu;
-  wire        _io_rs2Read_1_valid_T_34 = decodedInsts_1_mul | decodedInsts_1_mulh;
   wire        tryDispatch =
     ~io_halted & ~io_interlock & io_inst_0_valid
     & {((decodedInsts_0_jalr | _rdMark_valid_T_5 | decodedInsts_0_lw | decodedInsts_0_lbu
@@ -3104,7 +2574,7 @@ module DispatchV2(
          | decodedInsts_0_flushat | decodedInsts_0_flushall
            ? 32'h1 << decodedInsts_0_immcsr
            : 32'h0)
-        | (_io_rs2Read_0_valid_T_25 | decodedInsts_0_sw ? 32'h1 << _GEN_6 : 32'h0))
+        | (_io_rs2Read_0_valid_T_25 | decodedInsts_0_sw ? 32'h1 << _GEN_3 : 32'h0))
          & io_scoreboard_regd,
        ((_io_rs2Read_0_valid_T_1 | decodedInsts_0_blt | decodedInsts_0_bge
          | decodedInsts_0_bltu | decodedInsts_0_bgeu | _io_rs2Read_0_valid_T_6
@@ -3136,12 +2606,16 @@ module DispatchV2(
            | _io_rs2Read_0_valid_T_34 | decodedInsts_0_mulhsu | decodedInsts_0_mulhu
            | _io_rs2Read_0_valid_T_38 | decodedInsts_0_rem | decodedInsts_0_remu
            | decodedInsts_slog
-             ? 32'h1 << _GEN_6
+             ? 32'h1 << _GEN_3
              : 32'h0)) & io_scoreboard_comb} == 64'h0
-    & (rdScoreboard_0 & io_scoreboard_comb) == 32'h0
-    & ~((_slot0Interlock_T | decodedInsts_0_wfi | decodedInsts_0_mpause
-         | decodedInsts_0_flushat | decodedInsts_0_flushall) & io_lsuActive)
-    & (|io_lsuQueueCapacity)
+    & ((_io_rs2Read_0_valid_T_25 | decodedInsts_0_sw | _io_rs2Read_0_valid_T_1
+        | decodedInsts_0_blt | decodedInsts_0_bge | decodedInsts_0_bltu
+        | decodedInsts_0_bgeu
+          ? 32'h0
+          : 32'h1 << io_inst_0_bits_inst[11:7]) & io_scoreboard_comb) == 32'h0
+    & ~((decodedInsts_0_fencei | decodedInsts_0_ebreak | decodedInsts_0_wfi
+         | decodedInsts_0_mpause | decodedInsts_0_flushat | decodedInsts_0_flushall)
+        & io_lsuActive) & (|io_lsuQueueCapacity)
     & (~decodedInsts_0_mpause | io_scoreboard_regd == 32'h0 & ~io_lsuActive);
   wire        _alu_T_1 = decodedInsts_0_auipc | decodedInsts_0_addi | decodedInsts_0_add;
   wire        _alu_T_2 = decodedInsts_0_slti | decodedInsts_0_slt;
@@ -3268,204 +2742,11 @@ module DispatchV2(
   wire        lastReady_1 =
     io_alu_0_valid_0 | io_bru_0_valid_0 | io_mlu_0_valid_0 | dispatched_3 | dispatched_4
     | io_csr_valid_0 | io_slog_0 | tryDispatch & decodedInsts_0_fence;
-  wire        tryDispatch_1 =
-    lastReady_1 & ~io_halted & ~io_interlock & io_inst_1_valid
-    & ~(decodedInsts_0_jal | decodedInsts_0_jalr | decodedInsts_0_ecall
-        | decodedInsts_0_mpause | decodedInsts_0_mret | _slot0Interlock_T
-        | decodedInsts_0_wfi | decodedInsts_0_flushat | decodedInsts_0_flushall)
-    & {((decodedInsts_1_jalr | _rdMark_valid_T_26 | decodedInsts_1_lw | decodedInsts_1_lbu
-         | decodedInsts_1_lhu | _io_rs2Read_1_valid_T_25 | decodedInsts_1_sw
-           ? 32'h1 << _GEN_7
-           : 32'h0)
-        | (_io_rs2Read_1_valid_T_25 | decodedInsts_1_sw ? 32'h1 << _GEN_8 : 32'h0))
-         & (rdScoreboard_0 | io_scoreboard_regd),
-       ((_io_rs2Read_1_valid_T_1 | decodedInsts_1_blt | decodedInsts_1_bge
-         | decodedInsts_1_bltu | decodedInsts_1_bgeu | _io_rs2Read_1_valid_T_6
-         | decodedInsts_1_slt | decodedInsts_1_sltu | decodedInsts_1_xor
-         | decodedInsts_1_or | decodedInsts_1_and | decodedInsts_1_xnor
-         | decodedInsts_1_orn | decodedInsts_1_andn | decodedInsts_1_sll
-         | decodedInsts_1_srl | decodedInsts_1_sra | _io_rs2Set_1_valid_T_6
-         | decodedInsts_1_sltiu | decodedInsts_1_xori | decodedInsts_1_ori
-         | decodedInsts_1_andi | decodedInsts_1_slli | decodedInsts_1_srli
-         | decodedInsts_1_srai | decodedInsts_1_rori | _io_rs2Set_1_valid_T_16
-         | decodedInsts_1_cpop | decodedInsts_1_sextb | decodedInsts_1_sexth
-         | decodedInsts_1_zexth | decodedInsts_1_orcb | decodedInsts_1_rev8
-         | _io_rs2Read_1_valid_T_19 | decodedInsts_1_max | decodedInsts_1_maxu
-         | decodedInsts_1_rol | decodedInsts_1_ror | _io_rs2Read_1_valid_T_34
-         | decodedInsts_1_mulhsu | decodedInsts_1_mulhu | decodedInsts_1_jalr
-           ? 32'h1 << _GEN_7
-           : 32'h0)
-        | (_io_rs2Read_1_valid_T_1 | decodedInsts_1_blt | decodedInsts_1_bge
-           | decodedInsts_1_bltu | decodedInsts_1_bgeu | _io_rs2Read_1_valid_T_6
-           | decodedInsts_1_slt | decodedInsts_1_sltu | decodedInsts_1_xor
-           | decodedInsts_1_or | decodedInsts_1_and | decodedInsts_1_xnor
-           | decodedInsts_1_orn | decodedInsts_1_andn | decodedInsts_1_sll
-           | decodedInsts_1_srl | decodedInsts_1_sra | _io_rs2Read_1_valid_T_19
-           | decodedInsts_1_max | decodedInsts_1_maxu | decodedInsts_1_rol
-           | decodedInsts_1_ror | _io_rs2Read_1_valid_T_25 | decodedInsts_1_sw
-           | _io_rs2Read_1_valid_T_34 | decodedInsts_1_mulhsu | decodedInsts_1_mulhu
-             ? 32'h1 << _GEN_8
-             : 32'h0)) & comb_1} == 64'h0
-    & ((_io_rs2Read_1_valid_T_25 | decodedInsts_1_sw | _io_rs2Read_1_valid_T_1
-        | decodedInsts_1_blt | decodedInsts_1_bge | decodedInsts_1_bltu
-        | decodedInsts_1_bgeu
-          ? 32'h0
-          : 32'h1 << io_inst_1_bits_inst[11:7]) & comb_1) == 32'h0
-    & ~(_io_rs2Read_0_valid_T_1 | decodedInsts_0_blt | decodedInsts_0_bge
-        | decodedInsts_0_bltu | decodedInsts_0_bgeu)
-    & ~(_slot0Interlock_T | decodedInsts_0_wfi | decodedInsts_0_mpause
-        | decodedInsts_0_flushat | decodedInsts_0_flushall | _io_rs2Set_0_valid_T_1
-        | decodedInsts_0_csrrc)
-    & {3'h0,
-       _rdMark_valid_T_5 | decodedInsts_0_lw | decodedInsts_0_lbu | decodedInsts_0_lhu
-         | _io_rs2Read_0_valid_T_25 | decodedInsts_0_sw | decodedInsts_0_flushat
-         | decodedInsts_0_flushall} < {1'h0, io_lsuQueueCapacity}
-    & (|{decodedInsts_1_lui,
-         decodedInsts_1_auipc,
-         decodedInsts_1_jal,
-         decodedInsts_1_jalr,
-         decodedInsts_1_beq,
-         decodedInsts_1_bne,
-         decodedInsts_1_blt,
-         decodedInsts_1_bge,
-         decodedInsts_1_bltu,
-         decodedInsts_1_bgeu,
-         decodedInsts_1_lb,
-         decodedInsts_1_lh,
-         decodedInsts_1_lw,
-         decodedInsts_1_lbu,
-         decodedInsts_1_lhu,
-         decodedInsts_1_sb,
-         decodedInsts_1_sh,
-         decodedInsts_1_sw,
-         decodedInsts_1_addi,
-         decodedInsts_1_slti,
-         decodedInsts_1_sltiu,
-         decodedInsts_1_xori,
-         decodedInsts_1_ori,
-         decodedInsts_1_andi,
-         decodedInsts_1_add,
-         decodedInsts_1_sub,
-         decodedInsts_1_slt,
-         decodedInsts_1_sltu,
-         decodedInsts_1_xor,
-         decodedInsts_1_or,
-         decodedInsts_1_and,
-         decodedInsts_1_xnor,
-         decodedInsts_1_orn,
-         decodedInsts_1_andn,
-         decodedInsts_1_slli,
-         decodedInsts_1_srli,
-         decodedInsts_1_srai,
-         decodedInsts_1_sll,
-         decodedInsts_1_srl,
-         decodedInsts_1_sra,
-         decodedInsts_1_mul,
-         decodedInsts_1_mulh,
-         decodedInsts_1_mulhsu,
-         decodedInsts_1_mulhu,
-         decodedInsts_1_clz,
-         decodedInsts_1_ctz,
-         decodedInsts_1_cpop,
-         decodedInsts_1_min,
-         decodedInsts_1_minu,
-         decodedInsts_1_max,
-         decodedInsts_1_maxu,
-         decodedInsts_1_sextb,
-         decodedInsts_1_sexth,
-         decodedInsts_1_zexth,
-         decodedInsts_1_rol,
-         decodedInsts_1_ror,
-         decodedInsts_1_orcb,
-         decodedInsts_1_rev8,
-         decodedInsts_1_rori});
-  wire        _alu_T_39 = decodedInsts_1_auipc | decodedInsts_1_addi | decodedInsts_1_add;
-  wire        _alu_T_40 = decodedInsts_1_slti | decodedInsts_1_slt;
-  wire        _alu_T_41 = decodedInsts_1_sltiu | decodedInsts_1_sltu;
-  wire        _alu_T_42 = decodedInsts_1_xori | decodedInsts_1_xor;
-  wire        _alu_T_43 = decodedInsts_1_ori | decodedInsts_1_or;
-  wire        _alu_T_44 = decodedInsts_1_andi | decodedInsts_1_and;
-  wire        _alu_T_45 = decodedInsts_1_slli | decodedInsts_1_sll;
-  wire        _alu_T_46 = decodedInsts_1_srli | decodedInsts_1_srl;
-  wire        _alu_T_47 = decodedInsts_1_srai | decodedInsts_1_sra;
-  wire        io_alu_1_valid_0 =
-    tryDispatch_1
-    & (_alu_T_39 | decodedInsts_1_sub | _alu_T_40 | _alu_T_41 | _alu_T_42 | _alu_T_43
-       | _alu_T_44 | _alu_T_45 | _alu_T_46 | _alu_T_47 | decodedInsts_1_lui
-       | decodedInsts_1_andn | decodedInsts_1_orn | decodedInsts_1_xnor
-       | decodedInsts_1_clz | decodedInsts_1_ctz | decodedInsts_1_cpop
-       | decodedInsts_1_max | decodedInsts_1_maxu | decodedInsts_1_min
-       | decodedInsts_1_minu | decodedInsts_1_sextb | decodedInsts_1_sexth
-       | decodedInsts_1_rol | decodedInsts_1_ror | decodedInsts_1_orcb
-       | decodedInsts_1_rev8 | decodedInsts_1_zexth | decodedInsts_1_rori);
-  wire [3:0]  bru_1_bits =
-    decodedInsts_1_jal
-      ? 4'h0
-      : decodedInsts_1_jalr
-          ? 4'h1
-          : decodedInsts_1_beq
-              ? 4'h2
-              : decodedInsts_1_bne
-                  ? 4'h3
-                  : decodedInsts_1_blt
-                      ? 4'h4
-                      : decodedInsts_1_bge
-                          ? 4'h5
-                          : decodedInsts_1_bltu
-                              ? 4'h6
-                              : decodedInsts_1_bgeu ? 4'h7 : 4'h0;
-  wire [31:0] _bru_target_T_5 =
-    io_inst_1_bits_addr
-    + {{12{io_inst_1_bits_inst[31]}},
-       io_inst_1_bits_inst[2]
-         ? {io_inst_1_bits_inst[19:12],
-            io_inst_1_bits_inst[20],
-            io_inst_1_bits_inst[30:21]}
-         : {{8{io_inst_1_bits_inst[31]}},
-            io_inst_1_bits_inst[7],
-            io_inst_1_bits_inst[30:25],
-            io_inst_1_bits_inst[11:8]},
-       1'h0};
-  wire        _io_bru_1_valid_T =
-    tryDispatch_1
-    & (decodedInsts_1_jal | decodedInsts_1_jalr | decodedInsts_1_beq | decodedInsts_1_bne
-       | decodedInsts_1_blt | decodedInsts_1_bge | decodedInsts_1_bltu
-       | decodedInsts_1_bgeu);
-  wire        jalFault_1 =
-    _io_bru_1_valid_T & bru_1_bits == 4'h0 & (|(_bru_target_T_5[1:0])) & ~io_branchTaken;
-  wire        jalrFault_1 =
-    _io_bru_1_valid_T & bru_1_bits == 4'h1 & io_jalrTarget_1_data[1] & ~io_branchTaken;
-  wire        bxxFault_1 =
-    _io_bru_1_valid_T
-    & (|{bru_1_bits == 4'h7,
-         bru_1_bits == 4'h6,
-         bru_1_bits == 4'h5,
-         bru_1_bits == 4'h4,
-         bru_1_bits == 4'h3,
-         bru_1_bits == 4'h2}) & (|(_bru_target_T_5[1:0])) & ~io_branchTaken;
-  wire        io_bru_1_valid_0 =
-    _io_bru_1_valid_T & ~(jalFault_1 | jalrFault_1 | bxxFault_1);
-  wire        io_mlu_1_valid_0 =
-    tryDispatch_1
-    & (decodedInsts_1_mul | decodedInsts_1_mulh | decodedInsts_1_mulhsu
-       | decodedInsts_1_mulhu);
-  wire        io_lsu_1_valid_0 =
-    tryDispatch_1
-    & (decodedInsts_1_lb | decodedInsts_1_lh | decodedInsts_1_lw | decodedInsts_1_lbu
-       | decodedInsts_1_lhu | decodedInsts_1_sb | decodedInsts_1_sh | decodedInsts_1_sw);
-  wire        dispatched_2_1 = io_mlu_1_ready & io_mlu_1_valid_0;
-  wire        dispatched_4_1 = io_lsu_1_ready & io_lsu_1_valid_0;
-  wire        lastReady_2 =
-    io_alu_1_valid_0 | io_bru_1_valid_0 | dispatched_2_1 | dispatched_4_1;
   wire        _io_rs2Set_0_valid_T = lastReady_1 & io_inst_0_valid;
-  wire        _io_rs2Set_1_valid_T = lastReady_2 & io_inst_1_valid;
   assign io_csrFault_0 = csr_valid & ~csr_address_valid & tryDispatch;
   assign io_jalFault_0 = jalFault;
-  assign io_jalFault_1 = jalFault_1;
   assign io_jalrFault_0 = jalrFault;
-  assign io_jalrFault_1 = jalrFault_1;
   assign io_bxxFault_0 = bxxFault;
-  assign io_bxxFault_1 = bxxFault_1;
   assign io_undefFault_0 =
     io_inst_0_valid
     & {decodedInsts_0_lui,
@@ -3545,9 +2826,7 @@ module DispatchV2(
        decodedInsts_0_flushall,
        decodedInsts_slog} == 76'h0;
   assign io_bruTarget_0 = _bru_target_T_2;
-  assign io_bruTarget_1 = _bru_target_T_5;
   assign io_inst_0_ready = lastReady_1;
-  assign io_inst_1_ready = lastReady_2;
   assign io_rs1Read_0_valid =
     _io_rs2Set_0_valid_T
     & (_io_rs2Read_0_valid_T_1 | decodedInsts_0_blt | decodedInsts_0_bge
@@ -3568,24 +2847,6 @@ module DispatchV2(
        | decodedInsts_slog | decodedInsts_0_jalr);
   assign io_rs1Read_0_addr =
     io_inst_0_bits_inst[0] ? io_inst_0_bits_inst[19:15] : {4'h0, io_inst_0_bits_inst[27]};
-  assign io_rs1Read_1_valid =
-    _io_rs2Set_1_valid_T
-    & (_io_rs2Read_1_valid_T_1 | decodedInsts_1_blt | decodedInsts_1_bge
-       | decodedInsts_1_bltu | decodedInsts_1_bgeu | _io_rs2Read_1_valid_T_6
-       | decodedInsts_1_slt | decodedInsts_1_sltu | decodedInsts_1_xor | decodedInsts_1_or
-       | decodedInsts_1_and | decodedInsts_1_xnor | decodedInsts_1_orn
-       | decodedInsts_1_andn | decodedInsts_1_sll | decodedInsts_1_srl
-       | decodedInsts_1_sra | _io_rs2Set_1_valid_T_6 | decodedInsts_1_sltiu
-       | decodedInsts_1_xori | decodedInsts_1_ori | decodedInsts_1_andi
-       | decodedInsts_1_slli | decodedInsts_1_srli | decodedInsts_1_srai
-       | decodedInsts_1_rori | _io_rs2Set_1_valid_T_16 | decodedInsts_1_cpop
-       | decodedInsts_1_sextb | decodedInsts_1_sexth | decodedInsts_1_zexth
-       | decodedInsts_1_orcb | decodedInsts_1_rev8 | _io_rs2Read_1_valid_T_19
-       | decodedInsts_1_max | decodedInsts_1_maxu | decodedInsts_1_rol
-       | decodedInsts_1_ror | _io_rs2Read_1_valid_T_34 | decodedInsts_1_mulhsu
-       | decodedInsts_1_mulhu | decodedInsts_1_jalr);
-  assign io_rs1Read_1_addr =
-    io_inst_1_bits_inst[0] ? io_inst_1_bits_inst[19:15] : {4'h0, io_inst_1_bits_inst[28]};
   assign io_rs1Set_0_valid =
     _io_rs2Set_0_valid_T
     & (decodedInsts_0_auipc | (_io_rs2Set_0_valid_T_1 | decodedInsts_0_csrrc)
@@ -3594,8 +2855,6 @@ module DispatchV2(
     _io_rs2Set_0_valid_T_1 | decodedInsts_0_csrrc
       ? decodedInsts_0_immcsr
       : io_inst_0_bits_addr;
-  assign io_rs1Set_1_valid = _io_rs2Set_1_valid_T & decodedInsts_1_auipc;
-  assign io_rs1Set_1_value = io_inst_1_bits_addr;
   assign io_rs2Read_0_valid =
     _io_rs2Set_0_valid_T
     & (_io_rs2Read_0_valid_T_1 | decodedInsts_0_blt | decodedInsts_0_bge
@@ -3611,18 +2870,6 @@ module DispatchV2(
        | _io_rs2Read_0_valid_T_38 | decodedInsts_0_rem | decodedInsts_0_remu
        | decodedInsts_slog);
   assign io_rs2Read_0_addr = io_inst_0_bits_inst[24:20];
-  assign io_rs2Read_1_valid =
-    _io_rs2Set_1_valid_T
-    & (_io_rs2Read_1_valid_T_1 | decodedInsts_1_blt | decodedInsts_1_bge
-       | decodedInsts_1_bltu | decodedInsts_1_bgeu | _io_rs2Read_1_valid_T_6
-       | decodedInsts_1_slt | decodedInsts_1_sltu | decodedInsts_1_xor | decodedInsts_1_or
-       | decodedInsts_1_and | decodedInsts_1_xnor | decodedInsts_1_orn
-       | decodedInsts_1_andn | decodedInsts_1_sll | decodedInsts_1_srl
-       | decodedInsts_1_sra | _io_rs2Read_1_valid_T_19 | decodedInsts_1_max
-       | decodedInsts_1_maxu | decodedInsts_1_rol | decodedInsts_1_ror
-       | _io_rs2Read_1_valid_T_25 | decodedInsts_1_sw | _io_rs2Read_1_valid_T_34
-       | decodedInsts_1_mulhsu | decodedInsts_1_mulhu);
-  assign io_rs2Read_1_addr = io_inst_1_bits_inst[24:20];
   assign io_rs2Set_0_valid =
     _io_rs2Set_0_valid_T
     & (decodedInsts_0_auipc | (_io_rs2Set_0_valid_T_1 | decodedInsts_0_csrrc)
@@ -3636,30 +2883,12 @@ module DispatchV2(
     decodedInsts_0_auipc | decodedInsts_0_lui
       ? {io_inst_0_bits_inst[31:12], 12'h0}
       : {_decodedInsts_d_imm12_T_1, io_inst_0_bits_inst[31:20]};
-  assign io_rs2Set_1_valid =
-    _io_rs2Set_1_valid_T
-    & (decodedInsts_1_auipc | _io_rs2Set_1_valid_T_6 | decodedInsts_1_sltiu
-       | decodedInsts_1_xori | decodedInsts_1_ori | decodedInsts_1_andi
-       | decodedInsts_1_slli | decodedInsts_1_srli | decodedInsts_1_srai
-       | decodedInsts_1_rori | _io_rs2Set_1_valid_T_16 | decodedInsts_1_cpop
-       | decodedInsts_1_sextb | decodedInsts_1_sexth | decodedInsts_1_zexth
-       | decodedInsts_1_orcb | decodedInsts_1_rev8 | decodedInsts_1_lui);
-  assign io_rs2Set_1_value =
-    decodedInsts_1_auipc | decodedInsts_1_lui
-      ? {io_inst_1_bits_inst[31:12], 12'h0}
-      : {_decodedInsts_d_imm12_T_5, io_inst_1_bits_inst[31:20]};
   assign io_rdMark_0_valid =
     io_alu_0_valid_0 | io_mlu_0_valid_0 | dispatched_3 | dispatched_4
     & (_rdMark_valid_T_5 | decodedInsts_0_lw | decodedInsts_0_lbu | decodedInsts_0_lhu)
     | io_csr_valid_0 | io_bru_0_valid_0 & (|{bru_bits == 4'h1, bru_bits == 4'h0})
     & (|(io_inst_0_bits_inst[11:7]));
   assign io_rdMark_0_addr = io_inst_0_bits_inst[11:7];
-  assign io_rdMark_1_valid =
-    io_alu_1_valid_0 | dispatched_2_1 | dispatched_4_1
-    & (_rdMark_valid_T_26 | decodedInsts_1_lw | decodedInsts_1_lbu | decodedInsts_1_lhu)
-    | io_bru_1_valid_0 & (|{bru_1_bits == 4'h1, bru_1_bits == 4'h0})
-    & (|(io_inst_1_bits_inst[11:7]));
-  assign io_rdMark_1_addr = io_inst_1_bits_inst[11:7];
   assign io_busRead_0_bypass =
     io_inst_0_bits_inst[31:25] == 7'h0
     & (~(io_inst_0_bits_inst[5]) | io_inst_0_bits_inst[6]
@@ -3672,17 +2901,6 @@ module DispatchV2(
      io_inst_0_bits_inst[6:3] == 4'h4 & (&(io_inst_0_bits_inst[1:0]))
        ? io_inst_0_bits_inst[11:7]
        : io_inst_0_bits_inst[24:20]};
-  assign io_busRead_1_bypass =
-    io_inst_1_bits_inst[31:25] == 7'h0
-    & (~(io_inst_1_bits_inst[5]) | io_inst_1_bits_inst[6]
-         ? io_inst_1_bits_inst[24:20] == 5'h0
-         : io_inst_1_bits_inst[11:7] == 5'h0);
-  assign io_busRead_1_immed =
-    {_decodedInsts_d_imm12_T_5,
-     io_inst_1_bits_inst[31:25],
-     io_inst_1_bits_inst[6:3] == 4'h4 & (&(io_inst_1_bits_inst[1:0]))
-       ? io_inst_1_bits_inst[11:7]
-       : io_inst_1_bits_inst[24:20]};
   assign io_alu_0_valid = io_alu_0_valid_0;
   assign io_alu_0_bits_addr = io_inst_0_bits_inst[11:7];
   assign io_alu_0_bits_op =
@@ -3745,80 +2963,12 @@ module DispatchV2(
                                                                                                                   : decodedInsts_0_rori
                                                                                                                       ? 5'h18
                                                                                                                       : 5'h0;
-  assign io_alu_1_valid = io_alu_1_valid_0;
-  assign io_alu_1_bits_addr = io_inst_1_bits_inst[11:7];
-  assign io_alu_1_bits_op =
-    _alu_T_39
-      ? 5'h0
-      : decodedInsts_1_sub
-          ? 5'h1
-          : _alu_T_40
-              ? 5'h2
-              : _alu_T_41
-                  ? 5'h3
-                  : _alu_T_42
-                      ? 5'h4
-                      : _alu_T_43
-                          ? 5'h5
-                          : _alu_T_44
-                              ? 5'h6
-                              : _alu_T_45
-                                  ? 5'h7
-                                  : _alu_T_46
-                                      ? 5'h8
-                                      : _alu_T_47
-                                          ? 5'h9
-                                          : decodedInsts_1_lui
-                                              ? 5'hA
-                                              : decodedInsts_1_andn
-                                                  ? 5'hB
-                                                  : decodedInsts_1_orn
-                                                      ? 5'hC
-                                                      : decodedInsts_1_xnor
-                                                          ? 5'hD
-                                                          : decodedInsts_1_clz
-                                                              ? 5'hE
-                                                              : decodedInsts_1_ctz
-                                                                  ? 5'hF
-                                                                  : decodedInsts_1_cpop
-                                                                      ? 5'h10
-                                                                      : decodedInsts_1_max
-                                                                          ? 5'h11
-                                                                          : decodedInsts_1_maxu
-                                                                              ? 5'h12
-                                                                              : decodedInsts_1_min
-                                                                                  ? 5'h13
-                                                                                  : decodedInsts_1_minu
-                                                                                      ? 5'h14
-                                                                                      : decodedInsts_1_sextb
-                                                                                          ? 5'h15
-                                                                                          : decodedInsts_1_sexth
-                                                                                              ? 5'h16
-                                                                                              : decodedInsts_1_rol
-                                                                                                  ? 5'h17
-                                                                                                  : decodedInsts_1_ror
-                                                                                                      ? 5'h18
-                                                                                                      : decodedInsts_1_orcb
-                                                                                                          ? 5'h19
-                                                                                                          : decodedInsts_1_rev8
-                                                                                                              ? 5'h1A
-                                                                                                              : decodedInsts_1_zexth
-                                                                                                                  ? 5'h1B
-                                                                                                                  : decodedInsts_1_rori
-                                                                                                                      ? 5'h18
-                                                                                                                      : 5'h0;
   assign io_bru_0_valid = io_bru_0_valid_0;
   assign io_bru_0_bits_fwd = io_inst_0_bits_brchFwd;
   assign io_bru_0_bits_op = bru_bits;
   assign io_bru_0_bits_pc = io_inst_0_bits_addr;
   assign io_bru_0_bits_target = _bru_target_T_2;
   assign io_bru_0_bits_link = io_inst_0_bits_inst[11:7];
-  assign io_bru_1_valid = io_bru_1_valid_0;
-  assign io_bru_1_bits_fwd = io_inst_1_bits_brchFwd;
-  assign io_bru_1_bits_op = bru_1_bits;
-  assign io_bru_1_bits_pc = io_inst_1_bits_addr;
-  assign io_bru_1_bits_target = _bru_target_T_5;
-  assign io_bru_1_bits_link = io_inst_1_bits_inst[11:7];
   assign io_csr_valid = io_csr_valid_0;
   assign io_csr_bits_addr = io_inst_0_bits_inst[11:7];
   assign io_csr_bits_index = io_inst_0_bits_inst[31:20];
@@ -3852,24 +3002,6 @@ module DispatchV2(
                                           ? 5'h9
                                           : decodedInsts_0_flushall ? 5'hA : 5'h0;
   assign io_lsu_0_bits_pc = io_inst_0_bits_addr;
-  assign io_lsu_1_valid = io_lsu_1_valid_0;
-  assign io_lsu_1_bits_store = io_inst_1_bits_inst[5];
-  assign io_lsu_1_bits_addr = io_inst_1_bits_inst[11:7];
-  assign io_lsu_1_bits_op =
-    decodedInsts_1_lb
-      ? 5'h0
-      : decodedInsts_1_lh
-          ? 5'h1
-          : decodedInsts_1_lw
-              ? 5'h2
-              : decodedInsts_1_lbu
-                  ? 5'h3
-                  : decodedInsts_1_lhu
-                      ? 5'h4
-                      : decodedInsts_1_sb
-                          ? 5'h5
-                          : decodedInsts_1_sh ? 5'h6 : decodedInsts_1_sw ? 5'h7 : 5'h0;
-  assign io_lsu_1_bits_pc = io_inst_1_bits_addr;
   assign io_mlu_0_valid = io_mlu_0_valid_0;
   assign io_mlu_0_bits_addr = io_inst_0_bits_inst[11:7];
   assign io_mlu_0_bits_op =
@@ -3878,14 +3010,6 @@ module DispatchV2(
       : decodedInsts_0_mulh
           ? 3'h1
           : decodedInsts_0_mulhsu ? 3'h2 : decodedInsts_0_mulhu ? 3'h3 : 3'h0;
-  assign io_mlu_1_valid = io_mlu_1_valid_0;
-  assign io_mlu_1_bits_addr = io_inst_1_bits_inst[11:7];
-  assign io_mlu_1_bits_op =
-    decodedInsts_1_mul
-      ? 3'h0
-      : decodedInsts_1_mulh
-          ? 3'h1
-          : decodedInsts_1_mulhsu ? 3'h2 : decodedInsts_1_mulhu ? 3'h3 : 3'h0;
   assign io_dvu_0_valid = io_dvu_0_valid_0;
   assign io_dvu_0_bits_addr = io_inst_0_bits_inst[11:7];
   assign io_dvu_0_bits_op =
@@ -4410,142 +3534,16 @@ module Bru(
     stateReg_valid & (|{_ignore_T_7, _ignore_T_5, _ignore_T_4, _ignore_T_3, _ignore_T_2});
 endmodule
 
-module Bru_1(
-  input         clock,
-                reset,
-                io_req_valid,
-                io_req_bits_fwd,
-  input  [3:0]  io_req_bits_op,
-  input  [31:0] io_req_bits_pc,
-                io_req_bits_target,
-  input  [4:0]  io_req_bits_link,
-  input         io_rs1_valid,
-  input  [31:0] io_rs1_data,
-  input         io_rs2_valid,
-  input  [31:0] io_rs2_data,
-  output        io_rd_valid,
-  output [4:0]  io_rd_bits_addr,
-  output [31:0] io_rd_bits_data,
-  output        io_taken_valid,
-  output [31:0] io_taken_value,
-  input  [31:0] io_target_data
-);
-
-  reg         stateReg_valid;
-  reg         stateReg_bits_fwd;
-  reg  [3:0]  stateReg_bits_op;
-  reg  [31:0] stateReg_bits_target;
-  reg         stateReg_bits_linkValid;
-  reg  [4:0]  stateReg_bits_linkAddr;
-  reg  [31:0] stateReg_bits_linkData;
-  wire        _ignore_T_2 = stateReg_bits_op == 4'h8;
-  wire        _ignore_T_3 = stateReg_bits_op == 4'h9;
-  wire        _ignore_T_4 = stateReg_bits_op == 4'hA;
-  wire        _ignore_T_5 = stateReg_bits_op == 4'hB;
-  wire        _ignore_T_6 = stateReg_bits_op == 4'hC;
-  wire [31:0] nextState_linkData = io_req_bits_pc + 32'h4;
-  wire        _nextState_target_T = io_req_bits_op == 4'h1;
-  always @(posedge clock or posedge reset) begin
-    if (reset) begin
-      stateReg_valid <= 1'h0;
-      stateReg_bits_fwd <= 1'h0;
-      stateReg_bits_op <= 4'h0;
-      stateReg_bits_target <= 32'h0;
-      stateReg_bits_linkValid <= 1'h0;
-      stateReg_bits_linkAddr <= 5'h0;
-      stateReg_bits_linkData <= 32'h0;
-    end
-    else begin
-      stateReg_valid <= io_req_valid;
-      if (io_req_valid) begin
-        stateReg_bits_fwd <= io_req_valid & io_req_bits_fwd;
-        stateReg_bits_op <= io_req_bits_op;
-        stateReg_bits_target <=
-          io_req_bits_fwd
-            ? nextState_linkData
-            : _nextState_target_T ? io_target_data & 32'hFFFFFFFE : io_req_bits_target;
-        stateReg_bits_linkValid <=
-          io_req_valid & (|io_req_bits_link)
-          & (|{_nextState_target_T, io_req_bits_op == 4'h0});
-        stateReg_bits_linkAddr <= io_req_bits_link;
-        stateReg_bits_linkData <= nextState_linkData;
-      end
-    end
-  end // always @(posedge, posedge)
-  `ifdef ENABLE_INITIAL_REG_
-    `ifdef FIRRTL_BEFORE_INITIAL
-      `FIRRTL_BEFORE_INITIAL
-    `endif // FIRRTL_BEFORE_INITIAL
-    logic [31:0] _RANDOM[0:2];
-    initial begin
-      `ifdef INIT_RANDOM_PROLOG_
-        `INIT_RANDOM_PROLOG_
-      `endif // INIT_RANDOM_PROLOG_
-      `ifdef RANDOMIZE_REG_INIT
-        for (logic [1:0] i = 2'h0; i < 2'h3; i += 2'h1) begin
-          _RANDOM[i] = `RANDOM;
-        end
-        stateReg_valid = _RANDOM[2'h0][0];
-        stateReg_bits_fwd = _RANDOM[2'h0][1];
-        stateReg_bits_op = _RANDOM[2'h0][5:2];
-        stateReg_bits_target = {_RANDOM[2'h0][31:6], _RANDOM[2'h1][5:0]};
-        stateReg_bits_linkValid = _RANDOM[2'h1][6];
-        stateReg_bits_linkAddr = _RANDOM[2'h1][11:7];
-        stateReg_bits_linkData = {_RANDOM[2'h1][31:12], _RANDOM[2'h2][11:0]};
-      `endif // RANDOMIZE_REG_INIT
-      if (reset) begin
-        stateReg_valid = 1'h0;
-        stateReg_bits_fwd = 1'h0;
-        stateReg_bits_op = 4'h0;
-        stateReg_bits_target = 32'h0;
-        stateReg_bits_linkValid = 1'h0;
-        stateReg_bits_linkAddr = 5'h0;
-        stateReg_bits_linkData = 32'h0;
-      end
-    end // initial
-    `ifdef FIRRTL_AFTER_INITIAL
-      `FIRRTL_AFTER_INITIAL
-    `endif // FIRRTL_AFTER_INITIAL
-  `endif // ENABLE_INITIAL_REG_
-  assign io_rd_valid = stateReg_valid & stateReg_bits_linkValid;
-  assign io_rd_bits_addr = stateReg_bits_linkAddr;
-  assign io_rd_bits_data = stateReg_bits_linkData;
-  assign io_taken_valid =
-    stateReg_valid
-    & (stateReg_bits_op == 4'hD
-       | (stateReg_bits_op == 4'h7
-            ? io_rs1_data >= io_rs2_data != stateReg_bits_fwd
-            : stateReg_bits_op == 4'h6
-                ? io_rs1_data < io_rs2_data != stateReg_bits_fwd
-                : stateReg_bits_op == 4'h5
-                    ? $signed(io_rs1_data) >= $signed(io_rs2_data) != stateReg_bits_fwd
-                    : stateReg_bits_op == 4'h4
-                        ? $signed(io_rs1_data) < $signed(io_rs2_data) != stateReg_bits_fwd
-                        : stateReg_bits_op == 4'h3
-                            ? io_rs1_data != io_rs2_data != stateReg_bits_fwd
-                            : stateReg_bits_op == 4'h2
-                                ? io_rs1_data == io_rs2_data != stateReg_bits_fwd
-                                : (stateReg_bits_op == 4'h1 | ~(|stateReg_bits_op))
-                                  & ~stateReg_bits_fwd));
-  assign io_taken_value = stateReg_bits_target;
-endmodule
-
 module CircularBufferMulti_1(
   input         clock,
                 reset,
-  input  [1:0]  io_enqValid,
-  input         io_enqData_0_store,
+                io_enqValid,
+                io_enqData_0_store,
   input  [4:0]  io_enqData_0_rd,
                 io_enqData_0_op,
   input  [31:0] io_enqData_0_pc,
                 io_enqData_0_addr,
                 io_enqData_0_data,
-  input         io_enqData_1_store,
-  input  [4:0]  io_enqData_1_rd,
-                io_enqData_1_op,
-  input  [31:0] io_enqData_1_pc,
-                io_enqData_1_addr,
-                io_enqData_1_data,
   output [2:0]  io_nEnqueued,
                 io_nSpace,
   output        io_dataOut_0_store,
@@ -4554,14 +3552,8 @@ module CircularBufferMulti_1(
   output [31:0] io_dataOut_0_pc,
                 io_dataOut_0_addr,
                 io_dataOut_0_data,
-  output        io_dataOut_1_store,
-  output [4:0]  io_dataOut_1_rd,
-                io_dataOut_1_op,
-  output [31:0] io_dataOut_1_pc,
-                io_dataOut_1_addr,
-                io_dataOut_1_data,
-  input  [1:0]  io_deqReady,
-  input         io_flush
+  input         io_deqReady,
+                io_flush
 );
 
   reg          buffer_0_store;
@@ -4667,26 +3659,19 @@ module CircularBufferMulti_1(
     _outputBufferView_rotated_T_9[6]
       ? {_outputBufferView_rotated_T_42[63:0], _outputBufferView_rotated_T_42[427:64]}
       : _outputBufferView_rotated_T_42;
-  wire [427:0] _outputBufferView_rotated_T_50 =
+  wire [362:0] _outputBufferView_rotated_T_50 =
     _outputBufferView_rotated_T_9[7]
-      ? {_outputBufferView_rotated_T_46[127:0], _outputBufferView_rotated_T_46[427:128]}
-      : _outputBufferView_rotated_T_46;
-  wire [213:0] outputBufferView_rotated =
+      ? {_outputBufferView_rotated_T_46[62:0], _outputBufferView_rotated_T_46[427:128]}
+      : _outputBufferView_rotated_T_46[362:0];
+  wire [106:0] outputBufferView_rotated =
     _outputBufferView_rotated_T_9[8]
-      ? {_outputBufferView_rotated_T_50[41:0], _outputBufferView_rotated_T_50[427:256]}
-      : _outputBufferView_rotated_T_50[213:0];
+      ? _outputBufferView_rotated_T_50[362:256]
+      : _outputBufferView_rotated_T_50[106:0];
   wire [8:0]   _rotatedInput_rotated_T_13 = {7'h0, enqPtr} * 9'h6C;
   wire [431:0] _rotatedInput_rotated_T_26 =
     _rotatedInput_rotated_T_13[0]
-      ? {215'h0,
-         io_enqValid[1],
-         io_enqData_1_store,
-         io_enqData_1_rd,
-         io_enqData_1_op,
-         io_enqData_1_pc,
-         io_enqData_1_addr,
-         io_enqData_1_data,
-         |io_enqValid,
+      ? {323'h0,
+         io_enqValid,
          io_enqData_0_store,
          io_enqData_0_rd,
          io_enqData_0_op,
@@ -4694,15 +3679,8 @@ module CircularBufferMulti_1(
          io_enqData_0_addr,
          io_enqData_0_data,
          1'h0}
-      : {216'h0,
-         io_enqValid[1],
-         io_enqData_1_store,
-         io_enqData_1_rd,
-         io_enqData_1_op,
-         io_enqData_1_pc,
-         io_enqData_1_addr,
-         io_enqData_1_data,
-         |io_enqValid,
+      : {324'h0,
+         io_enqValid,
          io_enqData_0_store,
          io_enqData_0_rd,
          io_enqData_0_op,
@@ -4804,10 +3782,10 @@ module CircularBufferMulti_1(
         buffer_3_addr <= rotatedInput_rotated[387:356];
         buffer_3_data <= rotatedInput_rotated[355:324];
       end
-      enqPtr <= io_flush ? 2'h0 : enqPtr + io_enqValid;
-      deqPtr <= io_flush ? 2'h0 : deqPtr + io_deqReady;
+      enqPtr <= io_flush ? 2'h0 : enqPtr + {1'h0, io_enqValid};
+      deqPtr <= io_flush ? 2'h0 : deqPtr + {1'h0, io_deqReady};
       nEnqueued <=
-        io_flush ? 3'h0 : nEnqueued + {1'h0, io_enqValid} - {1'h0, io_deqReady};
+        io_flush ? 3'h0 : nEnqueued + {2'h0, io_enqValid} - {2'h0, io_deqReady};
     end
   end // always @(posedge, posedge)
   `ifdef ENABLE_INITIAL_REG_
@@ -4893,12 +3871,6 @@ module CircularBufferMulti_1(
   assign io_dataOut_0_pc = outputBufferView_rotated[95:64];
   assign io_dataOut_0_addr = outputBufferView_rotated[63:32];
   assign io_dataOut_0_data = outputBufferView_rotated[31:0];
-  assign io_dataOut_1_store = outputBufferView_rotated[213];
-  assign io_dataOut_1_rd = outputBufferView_rotated[212:208];
-  assign io_dataOut_1_op = outputBufferView_rotated[207:203];
-  assign io_dataOut_1_pc = outputBufferView_rotated[202:171];
-  assign io_dataOut_1_addr = outputBufferView_rotated[170:139];
-  assign io_dataOut_1_data = outputBufferView_rotated[138:107];
 endmodule
 
 module LsuV2(
@@ -4910,16 +3882,8 @@ module LsuV2(
   input  [4:0]   io_req_0_bits_addr,
                  io_req_0_bits_op,
   input  [31:0]  io_req_0_bits_pc,
-  output         io_req_1_ready,
-  input          io_req_1_valid,
-                 io_req_1_bits_store,
-  input  [4:0]   io_req_1_bits_addr,
-                 io_req_1_bits_op,
-  input  [31:0]  io_req_1_bits_pc,
                  io_busPort_addr_0,
-                 io_busPort_addr_1,
                  io_busPort_data_0,
-                 io_busPort_data_1,
   output         io_rd_valid,
   output [4:0]   io_rd_bits_addr,
   output [31:0]  io_rd_bits_data,
@@ -4961,8 +3925,6 @@ module LsuV2(
   wire              io_req_0_ready_0;
   wire              _alignedOps_aligner_out_0_valid;
   wire [106:0]      _alignedOps_aligner_out_0_bits;
-  wire              _alignedOps_aligner_out_1_valid;
-  wire [106:0]      _alignedOps_aligner_out_1_bits;
   wire [2:0]        _opQueue_io_nEnqueued;
   wire [2:0]        _opQueue_io_nSpace;
   wire              _opQueue_io_dataOut_0_store;
@@ -4979,10 +3941,6 @@ module LsuV2(
   wire              _ops_T_2 = io_req_0_bits_op == 5'h9;
   wire              _ops_T_3 = io_req_0_bits_op == 5'hA;
   assign io_req_0_ready_0 = (|_opQueue_io_nSpace) & ~flushCmd_valid;
-  wire              io_req_1_ready_0 =
-    {2'h0, io_req_0_valid} < _opQueue_io_nSpace & ~flushCmd_valid;
-  wire [1:0]        opQueue_io_enqValid =
-    {1'h0, _alignedOps_aligner_out_0_valid} + {1'h0, _alignedOps_aligner_out_1_valid};
   reg               readFired_valid;
   reg  [1:0]        readFired_bits_bus;
   reg  [27:0]       readFired_bits_lineAddr;
@@ -5332,8 +4290,8 @@ module LsuV2(
                                                                   ? slot_addrs_15
                                                                   : 32'h0;
   wire [31:0]       targetLineAddr = {targetAddress_bits[31:4], 4'h0};
-  wire              itcm = targetLineAddr < 32'h1000;
-  wire              dtcm = (|(targetAddress_bits[31:16])) & targetLineAddr < 32'h12000;
+  wire              itcm = targetLineAddr < 32'h800;
+  wire              dtcm = (|(targetAddress_bits[31:16])) & targetLineAddr < 32'h11000;
   wire              peri = targetLineAddr > 32'h2FFFF & targetLineAddr < 32'h31000;
   wire              canScatter =
     slot_store
@@ -7341,19 +6299,13 @@ module LsuV2(
   CircularBufferMulti_1 opQueue (
     .clock              (clock),
     .reset              (reset),
-    .io_enqValid        (opQueue_io_enqValid),
+    .io_enqValid        (_alignedOps_aligner_out_0_valid),
     .io_enqData_0_store (_alignedOps_aligner_out_0_bits[106]),
     .io_enqData_0_rd    (_alignedOps_aligner_out_0_bits[105:101]),
     .io_enqData_0_op    (_alignedOps_aligner_out_0_bits[100:96]),
     .io_enqData_0_pc    (_alignedOps_aligner_out_0_bits[95:64]),
     .io_enqData_0_addr  (_alignedOps_aligner_out_0_bits[63:32]),
     .io_enqData_0_data  (_alignedOps_aligner_out_0_bits[31:0]),
-    .io_enqData_1_store (_alignedOps_aligner_out_1_bits[106]),
-    .io_enqData_1_rd    (_alignedOps_aligner_out_1_bits[105:101]),
-    .io_enqData_1_op    (_alignedOps_aligner_out_1_bits[100:96]),
-    .io_enqData_1_pc    (_alignedOps_aligner_out_1_bits[95:64]),
-    .io_enqData_1_addr  (_alignedOps_aligner_out_1_bits[63:32]),
-    .io_enqData_1_data  (_alignedOps_aligner_out_1_bits[31:0]),
     .io_nEnqueued       (_opQueue_io_nEnqueued),
     .io_nSpace          (_opQueue_io_nSpace),
     .io_dataOut_0_store (_opQueue_io_dataOut_0_store),
@@ -7362,22 +6314,15 @@ module LsuV2(
     .io_dataOut_0_pc    (_opQueue_io_dataOut_0_pc),
     .io_dataOut_0_addr  (_opQueue_io_dataOut_0_addr),
     .io_dataOut_0_data  (_opQueue_io_dataOut_0_data),
-    .io_dataOut_1_store (/* unused */),
-    .io_dataOut_1_rd    (/* unused */),
-    .io_dataOut_1_op    (/* unused */),
-    .io_dataOut_1_pc    (/* unused */),
-    .io_dataOut_1_addr  (/* unused */),
-    .io_dataOut_1_data  (/* unused */),
     .io_deqReady
-      ({1'h0,
-        ~(slot_pendingVector | _io_active_T | slot_active_2 | slot_active_3
-          | slot_active_4 | slot_active_5 | slot_active_6 | slot_active_7 | slot_active_8
-          | slot_active_9 | slot_active_10 | slot_active_11 | slot_active_12
-          | slot_active_13 | slot_active_14 | slot_active_15 | slot_pendingWriteback
-          | slot_vectorLoop_isActive) & (|_opQueue_io_nEnqueued)}),
+      (~(slot_pendingVector | _io_active_T | slot_active_2 | slot_active_3 | slot_active_4
+         | slot_active_5 | slot_active_6 | slot_active_7 | slot_active_8 | slot_active_9
+         | slot_active_10 | slot_active_11 | slot_active_12 | slot_active_13
+         | slot_active_14 | slot_active_15 | slot_pendingWriteback
+         | slot_vectorLoop_isActive) & (|_opQueue_io_nEnqueued)),
     .io_flush           (1'h0)
   );
-  Aligner_107_2 alignedOps_aligner (
+  Aligner_107_1 alignedOps_aligner (
     .in_0_valid  (_ops_T & {_ops_T_3, _ops_T_2, flushCmd_result_fencei} == 3'h0),
     .in_0_bits
       ({io_req_0_bits_store,
@@ -7386,25 +6331,10 @@ module LsuV2(
         io_req_0_bits_pc,
         io_busPort_addr_0,
         io_busPort_data_0}),
-    .in_1_valid
-      (io_req_1_ready_0 & io_req_1_valid
-       & {io_req_1_bits_op == 5'hA,
-          io_req_1_bits_op == 5'h9,
-          io_req_1_bits_op == 5'h8} == 3'h0),
-    .in_1_bits
-      ({io_req_1_bits_store,
-        io_req_1_bits_addr,
-        io_req_1_bits_op,
-        io_req_1_bits_pc,
-        io_busPort_addr_1,
-        io_busPort_data_1}),
     .out_0_valid (_alignedOps_aligner_out_0_valid),
-    .out_0_bits  (_alignedOps_aligner_out_0_bits),
-    .out_1_valid (_alignedOps_aligner_out_1_valid),
-    .out_1_bits  (_alignedOps_aligner_out_1_bits)
+    .out_0_bits  (_alignedOps_aligner_out_0_bits)
   );
   assign io_req_0_ready = io_req_0_ready_0;
-  assign io_req_1_ready = io_req_1_ready_0;
   assign io_rd_valid = io_rd_valid_0;
   assign io_rd_bits_addr = slot_rd;
   assign io_rd_bits_data =
@@ -7504,25 +6434,18 @@ module LsuV2(
       _opQueue_io_nEnqueued};
 endmodule
 
-module Arbiter2_MluCmd(
+module Arbiter1_MluCmd(
   input        io_in_0_valid,
   input  [4:0] io_in_0_bits_addr,
   input  [2:0] io_in_0_bits_op,
-  output       io_in_1_ready,
-  input        io_in_1_valid,
-  input  [4:0] io_in_1_bits_addr,
-  input  [2:0] io_in_1_bits_op,
   output       io_out_valid,
   output [4:0] io_out_bits_addr,
-  output [2:0] io_out_bits_op,
-  output       io_chosen
+  output [2:0] io_out_bits_op
 );
 
-  assign io_in_1_ready = ~io_in_0_valid;
-  assign io_out_valid = io_in_0_valid | io_in_1_valid;
-  assign io_out_bits_addr = io_in_0_valid ? io_in_0_bits_addr : io_in_1_bits_addr;
-  assign io_out_bits_op = io_in_0_valid ? io_in_0_bits_op : io_in_1_bits_op;
-  assign io_chosen = ~io_in_0_valid;
+  assign io_out_valid = io_in_0_valid;
+  assign io_out_bits_addr = io_in_0_bits_addr;
+  assign io_out_bits_op = io_in_0_bits_op;
 endmodule
 
 module Queue1_MluStage1(
@@ -7531,14 +6454,13 @@ module Queue1_MluStage1(
                io_enq_valid,
   input  [4:0] io_enq_bits_rd,
   input  [2:0] io_enq_bits_op,
-  input  [1:0] io_enq_bits_sel,
   output       io_deq_valid,
   output [4:0] io_deq_bits_rd,
   output [2:0] io_deq_bits_op,
-  output [1:0] io_deq_bits_sel
+  output       io_deq_bits_sel
 );
 
-  reg [9:0] ram;
+  reg [8:0] ram;
   reg       full;
   always @(posedge clock or posedge reset) begin
     if (reset)
@@ -7548,7 +6470,7 @@ module Queue1_MluStage1(
   end // always @(posedge, posedge)
   always @(posedge clock) begin
     if (io_enq_valid)
-      ram <= {io_enq_bits_rd, io_enq_bits_op, io_enq_bits_sel};
+      ram <= {io_enq_bits_rd, io_enq_bits_op, 1'h1};
   end // always @(posedge)
   `ifdef ENABLE_INITIAL_REG_
     `ifdef FIRRTL_BEFORE_INITIAL
@@ -7562,7 +6484,7 @@ module Queue1_MluStage1(
       `ifdef RANDOMIZE_REG_INIT
         _RANDOM[/*Zero width*/ 1'b0] = `RANDOM;
         full = _RANDOM[/*Zero width*/ 1'b0][0];
-        ram = _RANDOM[/*Zero width*/ 1'b0][10:1];
+        ram = _RANDOM[/*Zero width*/ 1'b0][9:1];
       `endif // RANDOMIZE_REG_INIT
       if (reset)
         full = 1'h0;
@@ -7572,9 +6494,9 @@ module Queue1_MluStage1(
     `endif // FIRRTL_AFTER_INITIAL
   `endif // ENABLE_INITIAL_REG_
   assign io_deq_valid = full;
-  assign io_deq_bits_rd = ram[9:5];
-  assign io_deq_bits_op = ram[4:2];
-  assign io_deq_bits_sel = ram[1:0];
+  assign io_deq_bits_rd = ram[8:4];
+  assign io_deq_bits_op = ram[3:1];
+  assign io_deq_bits_sel = ram[0];
 endmodule
 
 module Queue1_MluStage2(
@@ -7637,18 +6559,10 @@ module Mlu(
                 io_req_0_valid,
   input  [4:0]  io_req_0_bits_addr,
   input  [2:0]  io_req_0_bits_op,
-  output        io_req_1_ready,
-  input         io_req_1_valid,
-  input  [4:0]  io_req_1_bits_addr,
-  input  [2:0]  io_req_1_bits_op,
   input         io_rs1_0_valid,
   input  [31:0] io_rs1_0_data,
-  input         io_rs1_1_valid,
-  input  [31:0] io_rs1_1_data,
   input         io_rs2_0_valid,
   input  [31:0] io_rs2_0_data,
-  input         io_rs2_1_valid,
-  input  [31:0] io_rs2_1_data,
   output        io_rd_valid,
   output [4:0]  io_rd_bits_addr,
   output [31:0] io_rd_bits_data
@@ -7659,38 +6573,22 @@ module Mlu(
   wire        _stage2Input_q_io_deq_valid;
   wire [4:0]  _stage2Input_q_io_deq_bits_rd;
   wire [2:0]  _stage2Input_q_io_deq_bits_op;
-  wire [1:0]  _stage2Input_q_io_deq_bits_sel;
+  wire        _stage2Input_q_io_deq_bits_sel;
   wire        _arb_io_out_valid;
   wire [4:0]  _arb_io_out_bits_addr;
   wire [2:0]  _arb_io_out_bits_op;
-  wire        _arb_io_chosen;
   wire [31:0] rs1 =
-    (_stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel[0]
-       ? io_rs1_0_data
-       : 32'h0)
-    | (_stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel[1]
-         ? io_rs1_1_data
-         : 32'h0);
+    _stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel ? io_rs1_0_data : 32'h0;
   wire [31:0] rs2 =
-    (_stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel[0]
-       ? io_rs2_0_data
-       : 32'h0)
-    | (_stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel[1]
-         ? io_rs2_1_data
-         : 32'h0);
+    _stage2Input_q_io_deq_valid & _stage2Input_q_io_deq_bits_sel ? io_rs2_0_data : 32'h0;
   wire        rs2signed = _stage2Input_q_io_deq_bits_op == 3'h1;
-  Arbiter2_MluCmd arb (
+  Arbiter1_MluCmd arb (
     .io_in_0_valid     (io_req_0_valid),
     .io_in_0_bits_addr (io_req_0_bits_addr),
     .io_in_0_bits_op   (io_req_0_bits_op),
-    .io_in_1_ready     (io_req_1_ready),
-    .io_in_1_valid     (io_req_1_valid),
-    .io_in_1_bits_addr (io_req_1_bits_addr),
-    .io_in_1_bits_op   (io_req_1_bits_op),
     .io_out_valid      (_arb_io_out_valid),
     .io_out_bits_addr  (_arb_io_out_bits_addr),
-    .io_out_bits_op    (_arb_io_out_bits_op),
-    .io_chosen         (_arb_io_chosen)
+    .io_out_bits_op    (_arb_io_out_bits_op)
   );
   Queue1_MluStage1 stage2Input_q (
     .clock           (clock),
@@ -7698,7 +6596,6 @@ module Mlu(
     .io_enq_valid    (_arb_io_out_valid),
     .io_enq_bits_rd  (_arb_io_out_bits_addr),
     .io_enq_bits_op  (_arb_io_out_bits_op),
-    .io_enq_bits_sel (2'h1 << _arb_io_chosen),
     .io_deq_valid    (_stage2Input_q_io_deq_valid),
     .io_deq_bits_rd  (_stage2Input_q_io_deq_bits_rd),
     .io_deq_bits_op  (_stage2Input_q_io_deq_bits_op),
@@ -7937,22 +6834,15 @@ module FaultManager(
                 io_in_fault_0_jalr,
                 io_in_fault_0_bxx,
                 io_in_fault_0_undef,
-                io_in_fault_1_jal,
-                io_in_fault_1_jalr,
-                io_in_fault_1_bxx,
   input  [31:0] io_in_pc_0_pc,
-                io_in_pc_1_pc,
   input         io_in_memory_fault_valid,
                 io_in_memory_fault_bits_write,
   input  [31:0] io_in_memory_fault_bits_addr,
                 io_in_memory_fault_bits_epc,
   input         io_in_ibus_fault,
   input  [31:0] io_in_undef_0_inst,
-                io_in_undef_1_inst,
                 io_in_jal_0_target,
-                io_in_jal_1_target,
                 io_in_jalr_0_target,
-                io_in_jalr_1_target,
   input         io_in_fetchFault,
   output        io_out_valid,
   output [31:0] io_out_bits_mepc,
@@ -7963,50 +6853,36 @@ module FaultManager(
   wire faults_0 =
     io_in_fault_0_csr | io_in_fault_0_jal | io_in_fault_0_jalr | io_in_fault_0_bxx
     | io_in_fault_0_undef;
-  wire fault = faults_0 | io_in_fault_1_jal | io_in_fault_1_jalr | io_in_fault_1_bxx;
   wire load_fault =
     io_in_memory_fault_valid & ~io_in_memory_fault_bits_write & ~io_in_ibus_fault;
   wire store_fault =
     io_in_memory_fault_valid & io_in_memory_fault_bits_write & ~io_in_ibus_fault;
   wire _GEN = load_fault | store_fault;
-  wire first_fault_is_csr = io_in_fault_0_csr & ~io_in_fault_0_csr == ~faults_0;
-  wire first_fault_is_jal =
-    (io_in_fault_0_jal | io_in_fault_1_jal) & ~io_in_fault_0_jal == ~faults_0;
-  wire first_fault_is_jalr =
-    (io_in_fault_0_jalr | io_in_fault_1_jalr) & ~io_in_fault_0_jalr == ~faults_0;
-  wire first_fault_is_bxx =
-    (io_in_fault_0_bxx | io_in_fault_1_bxx) & ~io_in_fault_0_bxx == ~faults_0;
-  wire first_fault_is_undef = io_in_fault_0_undef & ~io_in_fault_0_undef == ~faults_0;
-  assign io_out_valid = fault | io_in_fetchFault | load_fault | store_fault;
+  assign io_out_valid = faults_0 | io_in_fetchFault | load_fault | store_fault;
   assign io_out_bits_mepc =
     _GEN
       ? io_in_memory_fault_bits_epc
-      : fault
-          ? (faults_0 ? io_in_pc_0_pc : io_in_pc_1_pc)
-          : io_in_fetchFault ? io_in_memory_fault_bits_epc : 32'h0;
+      : faults_0 ? io_in_pc_0_pc : io_in_fetchFault ? io_in_memory_fault_bits_epc : 32'h0;
   assign io_out_bits_mtval =
     _GEN
       ? io_in_memory_fault_bits_addr
-      : first_fault_is_csr
+      : io_in_fault_0_csr
           ? 32'h0
-          : first_fault_is_jal
-              ? (io_in_fault_0_jal ? io_in_jal_0_target : io_in_jal_1_target)
-              : first_fault_is_jalr
-                  ? (io_in_fault_0_jalr ? io_in_jalr_0_target : io_in_jalr_1_target)
-                    & 32'hFFFFFFFE
-                  : first_fault_is_bxx | ~first_fault_is_undef
-                      ? 32'h0
-                      : io_in_fault_0_undef ? io_in_undef_0_inst : io_in_undef_1_inst;
+          : io_in_fault_0_jal
+              ? io_in_jal_0_target
+              : io_in_fault_0_jalr
+                  ? io_in_jalr_0_target & 32'hFFFFFFFE
+                  : io_in_fault_0_bxx | ~io_in_fault_0_undef ? 32'h0 : io_in_undef_0_inst;
   assign io_out_bits_mcause =
     load_fault
       ? 32'h5
       : store_fault
           ? 32'h7
-          : first_fault_is_csr
+          : io_in_fault_0_csr
               ? 32'h2
-              : first_fault_is_jal | first_fault_is_jalr | first_fault_is_bxx
+              : io_in_fault_0_jal | io_in_fault_0_jalr | io_in_fault_0_bxx
                   ? 32'h0
-                  : first_fault_is_undef ? 32'h2 : {31'h0, io_in_fetchFault};
+                  : io_in_fault_0_undef ? 32'h2 : {31'h0, io_in_fetchFault};
 endmodule
 
 module Arbiter2_RegfileWriteDataIO(
@@ -8074,9 +6950,7 @@ module SCore(
   output [31:0]  io_slog_data,
   output [3:0]   io_debug_en,
   output [31:0]  io_debug_addr_0,
-                 io_debug_addr_1,
                  io_debug_inst_0,
-                 io_debug_inst_1,
                  io_debug_cycles,
   output         io_debug_dbus_valid,
   output [31:0]  io_debug_dbus_bits_addr,
@@ -8085,13 +6959,8 @@ module SCore(
                  io_debug_dispatch_0_instFire,
   output [31:0]  io_debug_dispatch_0_instAddr,
                  io_debug_dispatch_0_instInst,
-  output         io_debug_dispatch_1_instFire,
-  output [31:0]  io_debug_dispatch_1_instAddr,
-                 io_debug_dispatch_1_instInst,
   output         io_debug_regfile_writeAddr_0_valid,
   output [4:0]   io_debug_regfile_writeAddr_0_bits,
-  output         io_debug_regfile_writeAddr_1_valid,
-  output [4:0]   io_debug_regfile_writeAddr_1_bits,
   output         io_debug_regfile_writeData_0_valid,
   output [4:0]   io_debug_regfile_writeData_0_bits_addr,
   output [31:0]  io_debug_regfile_writeData_0_bits_data,
@@ -8100,10 +6969,7 @@ module SCore(
   output [31:0]  io_debug_regfile_writeData_1_bits_data,
   output         io_debug_regfile_writeData_2_valid,
   output [4:0]   io_debug_regfile_writeData_2_bits_addr,
-  output [31:0]  io_debug_regfile_writeData_2_bits_data,
-  output         io_debug_regfile_writeData_3_valid,
-  output [4:0]   io_debug_regfile_writeData_3_bits_addr,
-  output [31:0]  io_debug_regfile_writeData_3_bits_data
+  output [31:0]  io_debug_regfile_writeData_2_bits_data
 );
 
   wire         _arb_io_in_1_ready;
@@ -8118,12 +6984,10 @@ module SCore(
   wire         _dvu_io_rd_valid;
   wire [4:0]   _dvu_io_rd_bits_addr;
   wire [31:0]  _dvu_io_rd_bits_data;
-  wire         _mlu_io_req_1_ready;
   wire         _mlu_io_rd_valid;
   wire [4:0]   _mlu_io_rd_bits_addr;
   wire [31:0]  _mlu_io_rd_bits_data;
   wire         _lsu_io_req_0_ready;
-  wire         _lsu_io_req_1_ready;
   wire         _lsu_io_rd_valid;
   wire [4:0]   _lsu_io_rd_bits_addr;
   wire [31:0]  _lsu_io_rd_bits_data;
@@ -8142,11 +7006,6 @@ module SCore(
   wire [31:0]  _lsu_io_fault_bits_epc;
   wire [2:0]   _lsu_io_queueCapacity;
   wire         _lsu_io_active;
-  wire         _bru_1_io_rd_valid;
-  wire [4:0]   _bru_1_io_rd_bits_addr;
-  wire [31:0]  _bru_1_io_rd_bits_data;
-  wire         _bru_1_io_taken_valid;
-  wire [31:0]  _bru_1_io_taken_value;
   wire         _bru_0_io_csr_in_mode_valid;
   wire [1:0]   _bru_0_io_csr_in_mode_bits;
   wire         _bru_0_io_csr_in_mcause_valid;
@@ -8164,67 +7023,38 @@ module SCore(
   wire         _bru_0_io_taken_valid;
   wire [31:0]  _bru_0_io_taken_value;
   wire         _bru_0_io_interlock;
-  wire         _alu_1_io_rd_valid;
-  wire [4:0]   _alu_1_io_rd_bits_addr;
-  wire [31:0]  _alu_1_io_rd_bits_data;
   wire         _alu_0_io_rd_valid;
   wire [4:0]   _alu_0_io_rd_bits_addr;
   wire [31:0]  _alu_0_io_rd_bits_data;
   wire         _dispatch_io_csrFault_0;
   wire         _dispatch_io_jalFault_0;
-  wire         _dispatch_io_jalFault_1;
   wire         _dispatch_io_jalrFault_0;
-  wire         _dispatch_io_jalrFault_1;
   wire         _dispatch_io_bxxFault_0;
-  wire         _dispatch_io_bxxFault_1;
   wire         _dispatch_io_undefFault_0;
   wire [31:0]  _dispatch_io_bruTarget_0;
-  wire [31:0]  _dispatch_io_bruTarget_1;
   wire         _dispatch_io_inst_0_ready;
-  wire         _dispatch_io_inst_1_ready;
   wire         _dispatch_io_rs1Read_0_valid;
   wire [4:0]   _dispatch_io_rs1Read_0_addr;
-  wire         _dispatch_io_rs1Read_1_valid;
-  wire [4:0]   _dispatch_io_rs1Read_1_addr;
   wire         _dispatch_io_rs1Set_0_valid;
   wire [31:0]  _dispatch_io_rs1Set_0_value;
-  wire         _dispatch_io_rs1Set_1_valid;
-  wire [31:0]  _dispatch_io_rs1Set_1_value;
   wire         _dispatch_io_rs2Read_0_valid;
   wire [4:0]   _dispatch_io_rs2Read_0_addr;
-  wire         _dispatch_io_rs2Read_1_valid;
-  wire [4:0]   _dispatch_io_rs2Read_1_addr;
   wire         _dispatch_io_rs2Set_0_valid;
   wire [31:0]  _dispatch_io_rs2Set_0_value;
-  wire         _dispatch_io_rs2Set_1_valid;
-  wire [31:0]  _dispatch_io_rs2Set_1_value;
   wire         _dispatch_io_rdMark_0_valid;
   wire [4:0]   _dispatch_io_rdMark_0_addr;
-  wire         _dispatch_io_rdMark_1_valid;
-  wire [4:0]   _dispatch_io_rdMark_1_addr;
   wire         _dispatch_io_busRead_0_bypass;
   wire         _dispatch_io_busRead_0_immen;
   wire [31:0]  _dispatch_io_busRead_0_immed;
-  wire         _dispatch_io_busRead_1_bypass;
-  wire [31:0]  _dispatch_io_busRead_1_immed;
   wire         _dispatch_io_alu_0_valid;
   wire [4:0]   _dispatch_io_alu_0_bits_addr;
   wire [4:0]   _dispatch_io_alu_0_bits_op;
-  wire         _dispatch_io_alu_1_valid;
-  wire [4:0]   _dispatch_io_alu_1_bits_addr;
-  wire [4:0]   _dispatch_io_alu_1_bits_op;
   wire         _dispatch_io_bru_0_valid;
   wire         _dispatch_io_bru_0_bits_fwd;
   wire [3:0]   _dispatch_io_bru_0_bits_op;
   wire [31:0]  _dispatch_io_bru_0_bits_pc;
   wire [31:0]  _dispatch_io_bru_0_bits_target;
   wire [4:0]   _dispatch_io_bru_0_bits_link;
-  wire         _dispatch_io_bru_1_valid;
-  wire         _dispatch_io_bru_1_bits_fwd;
-  wire [3:0]   _dispatch_io_bru_1_bits_op;
-  wire [31:0]  _dispatch_io_bru_1_bits_pc;
-  wire [31:0]  _dispatch_io_bru_1_bits_target;
-  wire [4:0]   _dispatch_io_bru_1_bits_link;
   wire         _dispatch_io_csr_valid;
   wire [4:0]   _dispatch_io_csr_bits_addr;
   wire [11:0]  _dispatch_io_csr_bits_index;
@@ -8234,17 +7064,9 @@ module SCore(
   wire [4:0]   _dispatch_io_lsu_0_bits_addr;
   wire [4:0]   _dispatch_io_lsu_0_bits_op;
   wire [31:0]  _dispatch_io_lsu_0_bits_pc;
-  wire         _dispatch_io_lsu_1_valid;
-  wire         _dispatch_io_lsu_1_bits_store;
-  wire [4:0]   _dispatch_io_lsu_1_bits_addr;
-  wire [4:0]   _dispatch_io_lsu_1_bits_op;
-  wire [31:0]  _dispatch_io_lsu_1_bits_pc;
   wire         _dispatch_io_mlu_0_valid;
   wire [4:0]   _dispatch_io_mlu_0_bits_addr;
   wire [2:0]   _dispatch_io_mlu_0_bits_op;
-  wire         _dispatch_io_mlu_1_valid;
-  wire [4:0]   _dispatch_io_mlu_1_bits_addr;
-  wire [2:0]   _dispatch_io_mlu_1_bits_op;
   wire         _dispatch_io_dvu_0_valid;
   wire [4:0]   _dispatch_io_dvu_0_bits_addr;
   wire [1:0]   _dispatch_io_dvu_0_bits_op;
@@ -8264,30 +7086,18 @@ module SCore(
   wire [31:0]  _fetch_io_inst_lanes_0_bits_addr;
   wire [31:0]  _fetch_io_inst_lanes_0_bits_inst;
   wire         _fetch_io_inst_lanes_0_bits_brchFwd;
-  wire         _fetch_io_inst_lanes_1_valid;
-  wire [31:0]  _fetch_io_inst_lanes_1_bits_addr;
-  wire [31:0]  _fetch_io_inst_lanes_1_bits_inst;
-  wire         _fetch_io_inst_lanes_1_bits_brchFwd;
   wire [31:0]  _fetch_io_pc;
   wire         _fetch_io_fault;
   wire [31:0]  _regfile_io_target_0_data;
-  wire [31:0]  _regfile_io_target_1_data;
   wire [31:0]  _regfile_io_busPort_addr_0;
-  wire [31:0]  _regfile_io_busPort_addr_1;
   wire [31:0]  _regfile_io_busPort_data_0;
-  wire [31:0]  _regfile_io_busPort_data_1;
   wire         _regfile_io_readData_0_valid;
   wire [31:0]  _regfile_io_readData_0_data;
   wire         _regfile_io_readData_1_valid;
   wire [31:0]  _regfile_io_readData_1_data;
-  wire         _regfile_io_readData_2_valid;
-  wire [31:0]  _regfile_io_readData_2_data;
-  wire         _regfile_io_readData_3_valid;
-  wire [31:0]  _regfile_io_readData_3_data;
   wire [31:0]  _regfile_io_scoreboard_regd;
   wire [31:0]  _regfile_io_scoreboard_comb;
   wire [5:0]   _regfile_io_rfwriteCount;
-  wire         branchTaken = _bru_0_io_taken_valid | _bru_1_io_taken_valid;
   wire         regfile_io_writeData_0_valid =
     _csr_io_rd_valid | _alu_0_io_rd_valid | _bru_0_io_rd_valid;
   wire [4:0]   regfile_io_writeData_0_bits_addr =
@@ -8298,44 +7108,28 @@ module SCore(
     (_csr_io_rd_valid ? _csr_io_rd_bits_data : 32'h0)
     | (_alu_0_io_rd_valid ? _alu_0_io_rd_bits_data : 32'h0)
     | (_bru_0_io_rd_valid ? _bru_0_io_rd_bits_data : 32'h0);
-  wire         regfile_io_writeData_1_valid = _alu_1_io_rd_valid | _bru_1_io_rd_valid;
-  wire [4:0]   regfile_io_writeData_1_bits_addr =
-    (_alu_1_io_rd_valid ? _alu_1_io_rd_bits_addr : 5'h0)
-    | (_bru_1_io_rd_valid ? _bru_1_io_rd_bits_addr : 5'h0);
-  wire [31:0]  regfile_io_writeData_1_bits_data =
-    (_alu_1_io_rd_valid ? _alu_1_io_rd_bits_data : 32'h0)
-    | (_bru_1_io_rd_valid ? _bru_1_io_rd_bits_data : 32'h0);
   reg          slogValid;
   reg  [1:0]   slogAddr;
-  reg  [1:0]   debugEn;
+  reg          debugEn;
   reg  [31:0]  debugAddr_0;
-  reg  [31:0]  debugAddr_1;
   reg  [31:0]  debugInst_0;
-  reg  [31:0]  debugInst_1;
   always @(posedge clock or posedge reset) begin
     if (reset) begin
       slogValid <= 1'h0;
       slogAddr <= 2'h0;
-      debugEn <= 2'h0;
+      debugEn <= 1'h0;
       debugAddr_0 <= 32'h0;
-      debugAddr_1 <= 32'h0;
       debugInst_0 <= 32'h0;
-      debugInst_1 <= 32'h0;
     end
     else begin
       slogValid <= _dispatch_io_slog;
       if (_dispatch_io_slog)
         slogAddr <= _fetch_io_inst_lanes_0_bits_inst[13:12];
       debugEn <=
-        {_fetch_io_inst_lanes_0_valid & _dispatch_io_inst_0_ready & ~branchTaken,
-         _fetch_io_inst_lanes_1_valid & _dispatch_io_inst_1_ready & ~branchTaken};
-      if (debugEn[0]) begin
+        _fetch_io_inst_lanes_0_valid & _dispatch_io_inst_0_ready & ~_bru_0_io_taken_valid;
+      if (debugEn) begin
         debugAddr_0 <= _fetch_io_inst_lanes_0_bits_addr;
         debugInst_0 <= _fetch_io_inst_lanes_0_bits_inst;
-      end
-      if (debugEn[1]) begin
-        debugAddr_1 <= _fetch_io_inst_lanes_1_bits_addr;
-        debugInst_1 <= _fetch_io_inst_lanes_1_bits_inst;
       end
     end
   end // always @(posedge, posedge)
@@ -8343,31 +7137,27 @@ module SCore(
     `ifdef FIRRTL_BEFORE_INITIAL
       `FIRRTL_BEFORE_INITIAL
     `endif // FIRRTL_BEFORE_INITIAL
-    logic [31:0] _RANDOM[0:4];
+    logic [31:0] _RANDOM[0:2];
     initial begin
       `ifdef INIT_RANDOM_PROLOG_
         `INIT_RANDOM_PROLOG_
       `endif // INIT_RANDOM_PROLOG_
       `ifdef RANDOMIZE_REG_INIT
-        for (logic [2:0] i = 3'h0; i < 3'h5; i += 3'h1) begin
+        for (logic [1:0] i = 2'h0; i < 2'h3; i += 2'h1) begin
           _RANDOM[i] = `RANDOM;
         end
-        slogValid = _RANDOM[3'h0][0];
-        slogAddr = _RANDOM[3'h0][2:1];
-        debugEn = _RANDOM[3'h0][4:3];
-        debugAddr_0 = {_RANDOM[3'h0][31:5], _RANDOM[3'h1][4:0]};
-        debugAddr_1 = {_RANDOM[3'h1][31:5], _RANDOM[3'h2][4:0]};
-        debugInst_0 = {_RANDOM[3'h2][31:5], _RANDOM[3'h3][4:0]};
-        debugInst_1 = {_RANDOM[3'h3][31:5], _RANDOM[3'h4][4:0]};
+        slogValid = _RANDOM[2'h0][0];
+        slogAddr = _RANDOM[2'h0][2:1];
+        debugEn = _RANDOM[2'h0][3];
+        debugAddr_0 = {_RANDOM[2'h0][31:4], _RANDOM[2'h1][3:0]};
+        debugInst_0 = {_RANDOM[2'h1][31:4], _RANDOM[2'h2][3:0]};
       `endif // RANDOMIZE_REG_INIT
       if (reset) begin
         slogValid = 1'h0;
         slogAddr = 2'h0;
-        debugEn = 2'h0;
+        debugEn = 1'h0;
         debugAddr_0 = 32'h0;
-        debugAddr_1 = 32'h0;
         debugInst_0 = 32'h0;
-        debugInst_1 = 32'h0;
       end
     end // initial
     `ifdef FIRRTL_AFTER_INITIAL
@@ -8381,55 +7171,32 @@ module SCore(
     .io_readAddr_0_addr       (_dispatch_io_rs1Read_0_addr),
     .io_readAddr_1_valid      (_dispatch_io_rs2Read_0_valid),
     .io_readAddr_1_addr       (_dispatch_io_rs2Read_0_addr),
-    .io_readAddr_2_valid      (_dispatch_io_rs1Read_1_valid),
-    .io_readAddr_2_addr       (_dispatch_io_rs1Read_1_addr),
-    .io_readAddr_3_valid      (_dispatch_io_rs2Read_1_valid),
-    .io_readAddr_3_addr       (_dispatch_io_rs2Read_1_addr),
     .io_readSet_0_valid       (_dispatch_io_rs1Set_0_valid),
     .io_readSet_0_value       (_dispatch_io_rs1Set_0_value),
     .io_readSet_1_valid       (_dispatch_io_rs2Set_0_valid),
     .io_readSet_1_value       (_dispatch_io_rs2Set_0_value),
-    .io_readSet_2_valid       (_dispatch_io_rs1Set_1_valid),
-    .io_readSet_2_value       (_dispatch_io_rs1Set_1_value),
-    .io_readSet_3_valid       (_dispatch_io_rs2Set_1_valid),
-    .io_readSet_3_value       (_dispatch_io_rs2Set_1_value),
     .io_writeAddr_0_valid     (_dispatch_io_rdMark_0_valid),
     .io_writeAddr_0_addr      (_dispatch_io_rdMark_0_addr),
-    .io_writeAddr_1_valid     (_dispatch_io_rdMark_1_valid),
-    .io_writeAddr_1_addr      (_dispatch_io_rdMark_1_addr),
     .io_busAddr_0_bypass      (_dispatch_io_busRead_0_bypass),
     .io_busAddr_0_immen       (_dispatch_io_busRead_0_immen),
     .io_busAddr_0_immed       (_dispatch_io_busRead_0_immed),
-    .io_busAddr_1_bypass      (_dispatch_io_busRead_1_bypass),
-    .io_busAddr_1_immed       (_dispatch_io_busRead_1_immed),
     .io_target_0_data         (_regfile_io_target_0_data),
-    .io_target_1_data         (_regfile_io_target_1_data),
     .io_busPort_addr_0        (_regfile_io_busPort_addr_0),
-    .io_busPort_addr_1        (_regfile_io_busPort_addr_1),
     .io_busPort_data_0        (_regfile_io_busPort_data_0),
-    .io_busPort_data_1        (_regfile_io_busPort_data_1),
     .io_readData_0_valid      (_regfile_io_readData_0_valid),
     .io_readData_0_data       (_regfile_io_readData_0_data),
     .io_readData_1_valid      (_regfile_io_readData_1_valid),
     .io_readData_1_data       (_regfile_io_readData_1_data),
-    .io_readData_2_valid      (_regfile_io_readData_2_valid),
-    .io_readData_2_data       (_regfile_io_readData_2_data),
-    .io_readData_3_valid      (_regfile_io_readData_3_valid),
-    .io_readData_3_data       (_regfile_io_readData_3_data),
     .io_writeData_0_valid     (regfile_io_writeData_0_valid),
     .io_writeData_0_bits_addr (regfile_io_writeData_0_bits_addr),
     .io_writeData_0_bits_data (regfile_io_writeData_0_bits_data),
-    .io_writeData_1_valid     (regfile_io_writeData_1_valid),
-    .io_writeData_1_bits_addr (regfile_io_writeData_1_bits_addr),
-    .io_writeData_1_bits_data (regfile_io_writeData_1_bits_data),
-    .io_writeData_2_valid     (_arb_io_out_valid),
-    .io_writeData_2_bits_addr (_arb_io_out_bits_addr),
-    .io_writeData_2_bits_data (_arb_io_out_bits_data),
-    .io_writeData_3_valid     (_lsu_io_rd_valid),
-    .io_writeData_3_bits_addr (_lsu_io_rd_bits_addr),
-    .io_writeData_3_bits_data (_lsu_io_rd_bits_data),
-    .io_writeMask_1_valid     (_bru_0_io_taken_valid),
-    .io_writeMask_3_valid     (_lsu_io_fault_valid),
+    .io_writeData_1_valid     (_arb_io_out_valid),
+    .io_writeData_1_bits_addr (_arb_io_out_bits_addr),
+    .io_writeData_1_bits_data (_arb_io_out_bits_data),
+    .io_writeData_2_valid     (_lsu_io_rd_valid),
+    .io_writeData_2_bits_addr (_lsu_io_rd_bits_addr),
+    .io_writeData_2_bits_data (_lsu_io_rd_bits_data),
+    .io_writeMask_2_valid     (_lsu_io_fault_valid),
     .io_scoreboard_regd       (_regfile_io_scoreboard_regd),
     .io_scoreboard_comb       (_regfile_io_scoreboard_comb),
     .io_rfwriteCount          (_regfile_io_rfwriteCount)
@@ -8448,15 +7215,8 @@ module SCore(
     .io_inst_lanes_0_bits_addr    (_fetch_io_inst_lanes_0_bits_addr),
     .io_inst_lanes_0_bits_inst    (_fetch_io_inst_lanes_0_bits_inst),
     .io_inst_lanes_0_bits_brchFwd (_fetch_io_inst_lanes_0_bits_brchFwd),
-    .io_inst_lanes_1_ready        (_dispatch_io_inst_1_ready),
-    .io_inst_lanes_1_valid        (_fetch_io_inst_lanes_1_valid),
-    .io_inst_lanes_1_bits_addr    (_fetch_io_inst_lanes_1_bits_addr),
-    .io_inst_lanes_1_bits_inst    (_fetch_io_inst_lanes_1_bits_inst),
-    .io_inst_lanes_1_bits_brchFwd (_fetch_io_inst_lanes_1_bits_brchFwd),
     .io_branch_0_valid            (_bru_0_io_taken_valid),
     .io_branch_0_value            (_bru_0_io_taken_value),
-    .io_branch_1_valid            (_bru_1_io_taken_valid),
-    .io_branch_1_value            (_bru_1_io_taken_value),
     .io_iflush_valid              (_lsu_io_flush_valid & _lsu_io_flush_fencei),
     .io_iflush_pcNext             (_lsu_io_flush_pcNext),
     .io_pc                        (_fetch_io_pc),
@@ -8510,73 +7270,42 @@ module SCore(
     .io_lsuActive           (_lsu_io_active),
     .io_scoreboard_regd     (_regfile_io_scoreboard_regd),
     .io_scoreboard_comb     (_regfile_io_scoreboard_comb),
-    .io_branchTaken         (branchTaken),
+    .io_branchTaken         (_bru_0_io_taken_valid),
     .io_csrFault_0          (_dispatch_io_csrFault_0),
     .io_jalFault_0          (_dispatch_io_jalFault_0),
-    .io_jalFault_1          (_dispatch_io_jalFault_1),
     .io_jalrFault_0         (_dispatch_io_jalrFault_0),
-    .io_jalrFault_1         (_dispatch_io_jalrFault_1),
     .io_bxxFault_0          (_dispatch_io_bxxFault_0),
-    .io_bxxFault_1          (_dispatch_io_bxxFault_1),
     .io_undefFault_0        (_dispatch_io_undefFault_0),
     .io_bruTarget_0         (_dispatch_io_bruTarget_0),
-    .io_bruTarget_1         (_dispatch_io_bruTarget_1),
     .io_jalrTarget_0_data   (_regfile_io_target_0_data),
-    .io_jalrTarget_1_data   (_regfile_io_target_1_data),
     .io_interlock           (_bru_0_io_interlock | _lsu_io_flush_valid),
     .io_inst_0_ready        (_dispatch_io_inst_0_ready),
     .io_inst_0_valid        (_fetch_io_inst_lanes_0_valid),
     .io_inst_0_bits_addr    (_fetch_io_inst_lanes_0_bits_addr),
     .io_inst_0_bits_inst    (_fetch_io_inst_lanes_0_bits_inst),
     .io_inst_0_bits_brchFwd (_fetch_io_inst_lanes_0_bits_brchFwd),
-    .io_inst_1_ready        (_dispatch_io_inst_1_ready),
-    .io_inst_1_valid        (_fetch_io_inst_lanes_1_valid),
-    .io_inst_1_bits_addr    (_fetch_io_inst_lanes_1_bits_addr),
-    .io_inst_1_bits_inst    (_fetch_io_inst_lanes_1_bits_inst),
-    .io_inst_1_bits_brchFwd (_fetch_io_inst_lanes_1_bits_brchFwd),
     .io_rs1Read_0_valid     (_dispatch_io_rs1Read_0_valid),
     .io_rs1Read_0_addr      (_dispatch_io_rs1Read_0_addr),
-    .io_rs1Read_1_valid     (_dispatch_io_rs1Read_1_valid),
-    .io_rs1Read_1_addr      (_dispatch_io_rs1Read_1_addr),
     .io_rs1Set_0_valid      (_dispatch_io_rs1Set_0_valid),
     .io_rs1Set_0_value      (_dispatch_io_rs1Set_0_value),
-    .io_rs1Set_1_valid      (_dispatch_io_rs1Set_1_valid),
-    .io_rs1Set_1_value      (_dispatch_io_rs1Set_1_value),
     .io_rs2Read_0_valid     (_dispatch_io_rs2Read_0_valid),
     .io_rs2Read_0_addr      (_dispatch_io_rs2Read_0_addr),
-    .io_rs2Read_1_valid     (_dispatch_io_rs2Read_1_valid),
-    .io_rs2Read_1_addr      (_dispatch_io_rs2Read_1_addr),
     .io_rs2Set_0_valid      (_dispatch_io_rs2Set_0_valid),
     .io_rs2Set_0_value      (_dispatch_io_rs2Set_0_value),
-    .io_rs2Set_1_valid      (_dispatch_io_rs2Set_1_valid),
-    .io_rs2Set_1_value      (_dispatch_io_rs2Set_1_value),
     .io_rdMark_0_valid      (_dispatch_io_rdMark_0_valid),
     .io_rdMark_0_addr       (_dispatch_io_rdMark_0_addr),
-    .io_rdMark_1_valid      (_dispatch_io_rdMark_1_valid),
-    .io_rdMark_1_addr       (_dispatch_io_rdMark_1_addr),
     .io_busRead_0_bypass    (_dispatch_io_busRead_0_bypass),
     .io_busRead_0_immen     (_dispatch_io_busRead_0_immen),
     .io_busRead_0_immed     (_dispatch_io_busRead_0_immed),
-    .io_busRead_1_bypass    (_dispatch_io_busRead_1_bypass),
-    .io_busRead_1_immed     (_dispatch_io_busRead_1_immed),
     .io_alu_0_valid         (_dispatch_io_alu_0_valid),
     .io_alu_0_bits_addr     (_dispatch_io_alu_0_bits_addr),
     .io_alu_0_bits_op       (_dispatch_io_alu_0_bits_op),
-    .io_alu_1_valid         (_dispatch_io_alu_1_valid),
-    .io_alu_1_bits_addr     (_dispatch_io_alu_1_bits_addr),
-    .io_alu_1_bits_op       (_dispatch_io_alu_1_bits_op),
     .io_bru_0_valid         (_dispatch_io_bru_0_valid),
     .io_bru_0_bits_fwd      (_dispatch_io_bru_0_bits_fwd),
     .io_bru_0_bits_op       (_dispatch_io_bru_0_bits_op),
     .io_bru_0_bits_pc       (_dispatch_io_bru_0_bits_pc),
     .io_bru_0_bits_target   (_dispatch_io_bru_0_bits_target),
     .io_bru_0_bits_link     (_dispatch_io_bru_0_bits_link),
-    .io_bru_1_valid         (_dispatch_io_bru_1_valid),
-    .io_bru_1_bits_fwd      (_dispatch_io_bru_1_bits_fwd),
-    .io_bru_1_bits_op       (_dispatch_io_bru_1_bits_op),
-    .io_bru_1_bits_pc       (_dispatch_io_bru_1_bits_pc),
-    .io_bru_1_bits_target   (_dispatch_io_bru_1_bits_target),
-    .io_bru_1_bits_link     (_dispatch_io_bru_1_bits_link),
     .io_csr_valid           (_dispatch_io_csr_valid),
     .io_csr_bits_addr       (_dispatch_io_csr_bits_addr),
     .io_csr_bits_index      (_dispatch_io_csr_bits_index),
@@ -8587,20 +7316,10 @@ module SCore(
     .io_lsu_0_bits_addr     (_dispatch_io_lsu_0_bits_addr),
     .io_lsu_0_bits_op       (_dispatch_io_lsu_0_bits_op),
     .io_lsu_0_bits_pc       (_dispatch_io_lsu_0_bits_pc),
-    .io_lsu_1_ready         (_lsu_io_req_1_ready),
-    .io_lsu_1_valid         (_dispatch_io_lsu_1_valid),
-    .io_lsu_1_bits_store    (_dispatch_io_lsu_1_bits_store),
-    .io_lsu_1_bits_addr     (_dispatch_io_lsu_1_bits_addr),
-    .io_lsu_1_bits_op       (_dispatch_io_lsu_1_bits_op),
-    .io_lsu_1_bits_pc       (_dispatch_io_lsu_1_bits_pc),
     .io_lsuQueueCapacity    (_lsu_io_queueCapacity),
     .io_mlu_0_valid         (_dispatch_io_mlu_0_valid),
     .io_mlu_0_bits_addr     (_dispatch_io_mlu_0_bits_addr),
     .io_mlu_0_bits_op       (_dispatch_io_mlu_0_bits_op),
-    .io_mlu_1_ready         (_mlu_io_req_1_ready),
-    .io_mlu_1_valid         (_dispatch_io_mlu_1_valid),
-    .io_mlu_1_bits_addr     (_dispatch_io_mlu_1_bits_addr),
-    .io_mlu_1_bits_op       (_dispatch_io_mlu_1_bits_op),
     .io_dvu_0_ready         (_dvu_io_req_ready),
     .io_dvu_0_valid         (_dispatch_io_dvu_0_valid),
     .io_dvu_0_bits_addr     (_dispatch_io_dvu_0_bits_addr),
@@ -8620,20 +7339,6 @@ module SCore(
     .io_rd_valid      (_alu_0_io_rd_valid),
     .io_rd_bits_addr  (_alu_0_io_rd_bits_addr),
     .io_rd_bits_data  (_alu_0_io_rd_bits_data)
-  );
-  Alu alu_1 (
-    .clock            (clock),
-    .reset            (reset),
-    .io_req_valid     (_dispatch_io_alu_1_valid),
-    .io_req_bits_addr (_dispatch_io_alu_1_bits_addr),
-    .io_req_bits_op   (_dispatch_io_alu_1_bits_op),
-    .io_rs1_valid     (_regfile_io_readData_2_valid),
-    .io_rs1_data      (_regfile_io_readData_2_data),
-    .io_rs2_valid     (_regfile_io_readData_3_valid),
-    .io_rs2_data      (_regfile_io_readData_3_data),
-    .io_rd_valid      (_alu_1_io_rd_valid),
-    .io_rd_bits_addr  (_alu_1_io_rd_bits_addr),
-    .io_rd_bits_data  (_alu_1_io_rd_bits_data)
   );
   Bru bru_0 (
     .clock                        (clock),
@@ -8674,26 +7379,6 @@ module SCore(
     .io_fault_manager_bits_mtval  (_fault_manager_io_out_bits_mtval),
     .io_fault_manager_bits_mcause (_fault_manager_io_out_bits_mcause)
   );
-  Bru_1 bru_1 (
-    .clock              (clock),
-    .reset              (reset),
-    .io_req_valid       (_dispatch_io_bru_1_valid),
-    .io_req_bits_fwd    (_dispatch_io_bru_1_bits_fwd),
-    .io_req_bits_op     (_dispatch_io_bru_1_bits_op),
-    .io_req_bits_pc     (_dispatch_io_bru_1_bits_pc),
-    .io_req_bits_target (_dispatch_io_bru_1_bits_target),
-    .io_req_bits_link   (_dispatch_io_bru_1_bits_link),
-    .io_rs1_valid       (_regfile_io_readData_2_valid),
-    .io_rs1_data        (_regfile_io_readData_2_data),
-    .io_rs2_valid       (_regfile_io_readData_3_valid),
-    .io_rs2_data        (_regfile_io_readData_3_data),
-    .io_rd_valid        (_bru_1_io_rd_valid),
-    .io_rd_bits_addr    (_bru_1_io_rd_bits_addr),
-    .io_rd_bits_data    (_bru_1_io_rd_bits_data),
-    .io_taken_valid     (_bru_1_io_taken_valid),
-    .io_taken_value     (_bru_1_io_taken_value),
-    .io_target_data     (_regfile_io_target_1_data)
-  );
   LsuV2 lsu (
     .clock                    (clock),
     .reset                    (reset),
@@ -8703,16 +7388,8 @@ module SCore(
     .io_req_0_bits_addr       (_dispatch_io_lsu_0_bits_addr),
     .io_req_0_bits_op         (_dispatch_io_lsu_0_bits_op),
     .io_req_0_bits_pc         (_dispatch_io_lsu_0_bits_pc),
-    .io_req_1_ready           (_lsu_io_req_1_ready),
-    .io_req_1_valid           (_dispatch_io_lsu_1_valid),
-    .io_req_1_bits_store      (_dispatch_io_lsu_1_bits_store),
-    .io_req_1_bits_addr       (_dispatch_io_lsu_1_bits_addr),
-    .io_req_1_bits_op         (_dispatch_io_lsu_1_bits_op),
-    .io_req_1_bits_pc         (_dispatch_io_lsu_1_bits_pc),
     .io_busPort_addr_0        (_regfile_io_busPort_addr_0),
-    .io_busPort_addr_1        (_regfile_io_busPort_addr_1),
     .io_busPort_data_0        (_regfile_io_busPort_data_0),
-    .io_busPort_data_1        (_regfile_io_busPort_data_1),
     .io_rd_valid              (_lsu_io_rd_valid),
     .io_rd_bits_addr          (_lsu_io_rd_bits_addr),
     .io_rd_bits_data          (_lsu_io_rd_bits_data),
@@ -8756,18 +7433,10 @@ module SCore(
     .io_req_0_valid     (_dispatch_io_mlu_0_valid),
     .io_req_0_bits_addr (_dispatch_io_mlu_0_bits_addr),
     .io_req_0_bits_op   (_dispatch_io_mlu_0_bits_op),
-    .io_req_1_ready     (_mlu_io_req_1_ready),
-    .io_req_1_valid     (_dispatch_io_mlu_1_valid),
-    .io_req_1_bits_addr (_dispatch_io_mlu_1_bits_addr),
-    .io_req_1_bits_op   (_dispatch_io_mlu_1_bits_op),
     .io_rs1_0_valid     (_regfile_io_readData_0_valid),
     .io_rs1_0_data      (_regfile_io_readData_0_data),
-    .io_rs1_1_valid     (_regfile_io_readData_2_valid),
-    .io_rs1_1_data      (_regfile_io_readData_2_data),
     .io_rs2_0_valid     (_regfile_io_readData_1_valid),
     .io_rs2_0_data      (_regfile_io_readData_1_data),
-    .io_rs2_1_valid     (_regfile_io_readData_3_valid),
-    .io_rs2_1_data      (_regfile_io_readData_3_data),
     .io_rd_valid        (_mlu_io_rd_valid),
     .io_rd_bits_addr    (_mlu_io_rd_bits_addr),
     .io_rd_bits_data    (_mlu_io_rd_bits_data)
@@ -8792,11 +7461,7 @@ module SCore(
     .io_in_fault_0_jalr            (_dispatch_io_jalrFault_0),
     .io_in_fault_0_bxx             (_dispatch_io_bxxFault_0),
     .io_in_fault_0_undef           (_dispatch_io_undefFault_0),
-    .io_in_fault_1_jal             (_dispatch_io_jalFault_1),
-    .io_in_fault_1_jalr            (_dispatch_io_jalrFault_1),
-    .io_in_fault_1_bxx             (_dispatch_io_bxxFault_1),
     .io_in_pc_0_pc                 (_fetch_io_inst_lanes_0_bits_addr),
-    .io_in_pc_1_pc                 (_fetch_io_inst_lanes_1_bits_addr),
     .io_in_memory_fault_valid
       (io_ibus_fault_valid ? io_ibus_fault_valid : _lsu_io_fault_valid),
     .io_in_memory_fault_bits_write
@@ -8809,15 +7474,11 @@ module SCore(
          : _lsu_io_fault_valid ? _lsu_io_fault_bits_epc : 32'h0),
     .io_in_ibus_fault              (io_ibus_fault_valid),
     .io_in_undef_0_inst            (_fetch_io_inst_lanes_0_bits_inst),
-    .io_in_undef_1_inst            (_fetch_io_inst_lanes_1_bits_inst),
     .io_in_jal_0_target            (_dispatch_io_bruTarget_0),
-    .io_in_jal_1_target            (_dispatch_io_bruTarget_1),
     .io_in_jalr_0_target           (_regfile_io_target_0_data),
-    .io_in_jalr_1_target           (_regfile_io_target_1_data),
     .io_in_fetchFault
-      (_fetch_io_fault & ~branchTaken & _regfile_io_scoreboard_regd == 32'h0
-       & ~_lsu_io_active
-       & ~(_fetch_io_inst_lanes_0_valid | _fetch_io_inst_lanes_1_valid)),
+      (_fetch_io_fault & ~_bru_0_io_taken_valid & _regfile_io_scoreboard_regd == 32'h0
+       & ~_lsu_io_active & ~_fetch_io_inst_lanes_0_valid),
     .io_out_valid                  (_fault_manager_io_out_valid),
     .io_out_bits_mepc              (_fault_manager_io_out_bits_mepc),
     .io_out_bits_mtval             (_fault_manager_io_out_bits_mtval),
@@ -8847,11 +7508,9 @@ module SCore(
   assign io_slog_valid = slogValid;
   assign io_slog_addr = {3'h0, slogValid ? slogAddr : 2'h0};
   assign io_slog_data = slogValid ? _regfile_io_readData_0_data : 32'h0;
-  assign io_debug_en = {2'h0, {~_bru_1_io_taken_valid, 1'h1} & debugEn};
+  assign io_debug_en = {3'h0, debugEn};
   assign io_debug_addr_0 = debugAddr_0;
-  assign io_debug_addr_1 = debugAddr_1;
   assign io_debug_inst_0 = debugInst_0;
-  assign io_debug_inst_1 = debugInst_1;
   assign io_debug_cycles = _csr_io_csr_out_value_4;
   assign io_debug_dbus_valid = _lsu_io_dbus_valid;
   assign io_debug_dbus_bits_addr = _lsu_io_dbus_addr;
@@ -8861,26 +7520,17 @@ module SCore(
     _dispatch_io_inst_0_ready & _fetch_io_inst_lanes_0_valid;
   assign io_debug_dispatch_0_instAddr = _fetch_io_inst_lanes_0_bits_addr;
   assign io_debug_dispatch_0_instInst = _fetch_io_inst_lanes_0_bits_inst;
-  assign io_debug_dispatch_1_instFire =
-    _dispatch_io_inst_1_ready & _fetch_io_inst_lanes_1_valid;
-  assign io_debug_dispatch_1_instAddr = _fetch_io_inst_lanes_1_bits_addr;
-  assign io_debug_dispatch_1_instInst = _fetch_io_inst_lanes_1_bits_inst;
   assign io_debug_regfile_writeAddr_0_valid = _dispatch_io_rdMark_0_valid;
   assign io_debug_regfile_writeAddr_0_bits = _dispatch_io_rdMark_0_addr;
-  assign io_debug_regfile_writeAddr_1_valid = _dispatch_io_rdMark_1_valid;
-  assign io_debug_regfile_writeAddr_1_bits = _dispatch_io_rdMark_1_addr;
   assign io_debug_regfile_writeData_0_valid = regfile_io_writeData_0_valid;
   assign io_debug_regfile_writeData_0_bits_addr = regfile_io_writeData_0_bits_addr;
   assign io_debug_regfile_writeData_0_bits_data = regfile_io_writeData_0_bits_data;
-  assign io_debug_regfile_writeData_1_valid = regfile_io_writeData_1_valid;
-  assign io_debug_regfile_writeData_1_bits_addr = regfile_io_writeData_1_bits_addr;
-  assign io_debug_regfile_writeData_1_bits_data = regfile_io_writeData_1_bits_data;
-  assign io_debug_regfile_writeData_2_valid = _arb_io_out_valid;
-  assign io_debug_regfile_writeData_2_bits_addr = _arb_io_out_bits_addr;
-  assign io_debug_regfile_writeData_2_bits_data = _arb_io_out_bits_data;
-  assign io_debug_regfile_writeData_3_valid = _lsu_io_rd_valid;
-  assign io_debug_regfile_writeData_3_bits_addr = _lsu_io_rd_bits_addr;
-  assign io_debug_regfile_writeData_3_bits_data = _lsu_io_rd_bits_data;
+  assign io_debug_regfile_writeData_1_valid = _arb_io_out_valid;
+  assign io_debug_regfile_writeData_1_bits_addr = _arb_io_out_bits_addr;
+  assign io_debug_regfile_writeData_1_bits_data = _arb_io_out_bits_data;
+  assign io_debug_regfile_writeData_2_valid = _lsu_io_rd_valid;
+  assign io_debug_regfile_writeData_2_bits_addr = _lsu_io_rd_bits_addr;
+  assign io_debug_regfile_writeData_2_bits_data = _lsu_io_rd_bits_data;
 endmodule
 
 module CoreMini(
@@ -8929,9 +7579,7 @@ module CoreMini(
   output [31:0]  io_slog_data,
   output [3:0]   io_debug_en,
   output [31:0]  io_debug_addr_0,
-                 io_debug_addr_1,
                  io_debug_inst_0,
-                 io_debug_inst_1,
                  io_debug_cycles,
   output         io_debug_dbus_valid,
   output [31:0]  io_debug_dbus_bits_addr,
@@ -8940,13 +7588,8 @@ module CoreMini(
                  io_debug_dispatch_0_instFire,
   output [31:0]  io_debug_dispatch_0_instAddr,
                  io_debug_dispatch_0_instInst,
-  output         io_debug_dispatch_1_instFire,
-  output [31:0]  io_debug_dispatch_1_instAddr,
-                 io_debug_dispatch_1_instInst,
   output         io_debug_regfile_writeAddr_0_valid,
   output [4:0]   io_debug_regfile_writeAddr_0_bits,
-  output         io_debug_regfile_writeAddr_1_valid,
-  output [4:0]   io_debug_regfile_writeAddr_1_bits,
   output         io_debug_regfile_writeData_0_valid,
   output [4:0]   io_debug_regfile_writeData_0_bits_addr,
   output [31:0]  io_debug_regfile_writeData_0_bits_data,
@@ -8955,10 +7598,7 @@ module CoreMini(
   output [31:0]  io_debug_regfile_writeData_1_bits_data,
   output         io_debug_regfile_writeData_2_valid,
   output [4:0]   io_debug_regfile_writeData_2_bits_addr,
-  output [31:0]  io_debug_regfile_writeData_2_bits_data,
-  output         io_debug_regfile_writeData_3_valid,
-  output [4:0]   io_debug_regfile_writeData_3_bits_addr,
-  output [31:0]  io_debug_regfile_writeData_3_bits_data
+  output [31:0]  io_debug_regfile_writeData_2_bits_data
 );
 
   SCore score (
@@ -9007,9 +7647,7 @@ module CoreMini(
     .io_slog_data                           (io_slog_data),
     .io_debug_en                            (io_debug_en),
     .io_debug_addr_0                        (io_debug_addr_0),
-    .io_debug_addr_1                        (io_debug_addr_1),
     .io_debug_inst_0                        (io_debug_inst_0),
-    .io_debug_inst_1                        (io_debug_inst_1),
     .io_debug_cycles                        (io_debug_cycles),
     .io_debug_dbus_valid                    (io_debug_dbus_valid),
     .io_debug_dbus_bits_addr                (io_debug_dbus_bits_addr),
@@ -9018,13 +7656,8 @@ module CoreMini(
     .io_debug_dispatch_0_instFire           (io_debug_dispatch_0_instFire),
     .io_debug_dispatch_0_instAddr           (io_debug_dispatch_0_instAddr),
     .io_debug_dispatch_0_instInst           (io_debug_dispatch_0_instInst),
-    .io_debug_dispatch_1_instFire           (io_debug_dispatch_1_instFire),
-    .io_debug_dispatch_1_instAddr           (io_debug_dispatch_1_instAddr),
-    .io_debug_dispatch_1_instInst           (io_debug_dispatch_1_instInst),
     .io_debug_regfile_writeAddr_0_valid     (io_debug_regfile_writeAddr_0_valid),
     .io_debug_regfile_writeAddr_0_bits      (io_debug_regfile_writeAddr_0_bits),
-    .io_debug_regfile_writeAddr_1_valid     (io_debug_regfile_writeAddr_1_valid),
-    .io_debug_regfile_writeAddr_1_bits      (io_debug_regfile_writeAddr_1_bits),
     .io_debug_regfile_writeData_0_valid     (io_debug_regfile_writeData_0_valid),
     .io_debug_regfile_writeData_0_bits_addr (io_debug_regfile_writeData_0_bits_addr),
     .io_debug_regfile_writeData_0_bits_data (io_debug_regfile_writeData_0_bits_data),
@@ -9033,11 +7666,359 @@ module CoreMini(
     .io_debug_regfile_writeData_1_bits_data (io_debug_regfile_writeData_1_bits_data),
     .io_debug_regfile_writeData_2_valid     (io_debug_regfile_writeData_2_valid),
     .io_debug_regfile_writeData_2_bits_addr (io_debug_regfile_writeData_2_bits_addr),
-    .io_debug_regfile_writeData_2_bits_data (io_debug_regfile_writeData_2_bits_data),
-    .io_debug_regfile_writeData_3_valid     (io_debug_regfile_writeData_3_valid),
-    .io_debug_regfile_writeData_3_bits_addr (io_debug_regfile_writeData_3_bits_addr),
-    .io_debug_regfile_writeData_3_bits_data (io_debug_regfile_writeData_3_bits_data)
+    .io_debug_regfile_writeData_2_bits_data (io_debug_regfile_writeData_2_bits_data)
   );
+endmodule
+
+module SRAM_128x128(
+  input          clock,
+  input  [6:0]   io_addr,
+  input          io_enable,
+                 io_write,
+  input  [127:0] io_wdata,
+  input  [15:0]  io_wmask,
+  output [127:0] io_rdata
+);
+
+  Sram_12ffcp_128x128 sramModules_0 (
+    .clock  (clock),
+    .enable (io_enable),
+    .write  (io_write),
+    .addr   (io_addr),
+    .wdata  (io_wdata),
+    .wmask  (io_wmask),
+    .rdata  (io_rdata)
+  );
+endmodule
+
+module TCM128(
+  input        clock,
+  input  [6:0] io_addr,
+  input        io_enable,
+               io_write,
+  input  [7:0] io_wdata_0,
+               io_wdata_1,
+               io_wdata_2,
+               io_wdata_3,
+               io_wdata_4,
+               io_wdata_5,
+               io_wdata_6,
+               io_wdata_7,
+               io_wdata_8,
+               io_wdata_9,
+               io_wdata_10,
+               io_wdata_11,
+               io_wdata_12,
+               io_wdata_13,
+               io_wdata_14,
+               io_wdata_15,
+  input        io_wmask_0,
+               io_wmask_1,
+               io_wmask_2,
+               io_wmask_3,
+               io_wmask_4,
+               io_wmask_5,
+               io_wmask_6,
+               io_wmask_7,
+               io_wmask_8,
+               io_wmask_9,
+               io_wmask_10,
+               io_wmask_11,
+               io_wmask_12,
+               io_wmask_13,
+               io_wmask_14,
+               io_wmask_15,
+  output [7:0] io_rdata_0,
+               io_rdata_1,
+               io_rdata_2,
+               io_rdata_3,
+               io_rdata_4,
+               io_rdata_5,
+               io_rdata_6,
+               io_rdata_7,
+               io_rdata_8,
+               io_rdata_9,
+               io_rdata_10,
+               io_rdata_11,
+               io_rdata_12,
+               io_rdata_13,
+               io_rdata_14,
+               io_rdata_15
+);
+
+  wire [127:0] _sram_io_rdata;
+  SRAM_128x128 sram (
+    .clock     (clock),
+    .io_addr   (io_addr),
+    .io_enable (io_enable),
+    .io_write  (io_write),
+    .io_wdata
+      ({io_wdata_15,
+        io_wdata_14,
+        io_wdata_13,
+        io_wdata_12,
+        io_wdata_11,
+        io_wdata_10,
+        io_wdata_9,
+        io_wdata_8,
+        io_wdata_7,
+        io_wdata_6,
+        io_wdata_5,
+        io_wdata_4,
+        io_wdata_3,
+        io_wdata_2,
+        io_wdata_1,
+        io_wdata_0}),
+    .io_wmask
+      ({io_wmask_15,
+        io_wmask_14,
+        io_wmask_13,
+        io_wmask_12,
+        io_wmask_11,
+        io_wmask_10,
+        io_wmask_9,
+        io_wmask_8,
+        io_wmask_7,
+        io_wmask_6,
+        io_wmask_5,
+        io_wmask_4,
+        io_wmask_3,
+        io_wmask_2,
+        io_wmask_1,
+        io_wmask_0}),
+    .io_rdata  (_sram_io_rdata)
+  );
+  assign io_rdata_0 = _sram_io_rdata[127:120];
+  assign io_rdata_1 = _sram_io_rdata[119:112];
+  assign io_rdata_2 = _sram_io_rdata[111:104];
+  assign io_rdata_3 = _sram_io_rdata[103:96];
+  assign io_rdata_4 = _sram_io_rdata[95:88];
+  assign io_rdata_5 = _sram_io_rdata[87:80];
+  assign io_rdata_6 = _sram_io_rdata[79:72];
+  assign io_rdata_7 = _sram_io_rdata[71:64];
+  assign io_rdata_8 = _sram_io_rdata[63:56];
+  assign io_rdata_9 = _sram_io_rdata[55:48];
+  assign io_rdata_10 = _sram_io_rdata[47:40];
+  assign io_rdata_11 = _sram_io_rdata[39:32];
+  assign io_rdata_12 = _sram_io_rdata[31:24];
+  assign io_rdata_13 = _sram_io_rdata[23:16];
+  assign io_rdata_14 = _sram_io_rdata[15:8];
+  assign io_rdata_15 = _sram_io_rdata[7:0];
+endmodule
+
+module SRAM(
+  input          clock,
+                 reset,
+                 io_fabric_readDataAddr_valid,
+  input  [31:0]  io_fabric_readDataAddr_bits,
+  output         io_fabric_readData_valid,
+  output [127:0] io_fabric_readData_bits,
+  input          io_fabric_writeDataAddr_valid,
+  input  [31:0]  io_fabric_writeDataAddr_bits,
+  input  [127:0] io_fabric_writeDataBits,
+  input  [15:0]  io_fabric_writeDataStrb,
+  output [6:0]   io_sram_address,
+  output         io_sram_enable,
+                 io_sram_isWrite,
+  input  [7:0]   io_sram_readData_0,
+                 io_sram_readData_1,
+                 io_sram_readData_2,
+                 io_sram_readData_3,
+                 io_sram_readData_4,
+                 io_sram_readData_5,
+                 io_sram_readData_6,
+                 io_sram_readData_7,
+                 io_sram_readData_8,
+                 io_sram_readData_9,
+                 io_sram_readData_10,
+                 io_sram_readData_11,
+                 io_sram_readData_12,
+                 io_sram_readData_13,
+                 io_sram_readData_14,
+                 io_sram_readData_15,
+  output [7:0]   io_sram_writeData_0,
+                 io_sram_writeData_1,
+                 io_sram_writeData_2,
+                 io_sram_writeData_3,
+                 io_sram_writeData_4,
+                 io_sram_writeData_5,
+                 io_sram_writeData_6,
+                 io_sram_writeData_7,
+                 io_sram_writeData_8,
+                 io_sram_writeData_9,
+                 io_sram_writeData_10,
+                 io_sram_writeData_11,
+                 io_sram_writeData_12,
+                 io_sram_writeData_13,
+                 io_sram_writeData_14,
+                 io_sram_writeData_15,
+  output         io_sram_mask_0,
+                 io_sram_mask_1,
+                 io_sram_mask_2,
+                 io_sram_mask_3,
+                 io_sram_mask_4,
+                 io_sram_mask_5,
+                 io_sram_mask_6,
+                 io_sram_mask_7,
+                 io_sram_mask_8,
+                 io_sram_mask_9,
+                 io_sram_mask_10,
+                 io_sram_mask_11,
+                 io_sram_mask_12,
+                 io_sram_mask_13,
+                 io_sram_mask_14,
+                 io_sram_mask_15
+);
+
+  reg readIssued;
+  always @(posedge clock or posedge reset) begin
+    if (reset)
+      readIssued <= 1'h0;
+    else
+      readIssued <= io_fabric_readDataAddr_valid & ~io_fabric_writeDataAddr_valid;
+  end // always @(posedge, posedge)
+  `ifdef ENABLE_INITIAL_REG_
+    `ifdef FIRRTL_BEFORE_INITIAL
+      `FIRRTL_BEFORE_INITIAL
+    `endif // FIRRTL_BEFORE_INITIAL
+    logic [31:0] _RANDOM[0:0];
+    initial begin
+      `ifdef INIT_RANDOM_PROLOG_
+        `INIT_RANDOM_PROLOG_
+      `endif // INIT_RANDOM_PROLOG_
+      `ifdef RANDOMIZE_REG_INIT
+        _RANDOM[/*Zero width*/ 1'b0] = `RANDOM;
+        readIssued = _RANDOM[/*Zero width*/ 1'b0][0];
+      `endif // RANDOMIZE_REG_INIT
+      if (reset)
+        readIssued = 1'h0;
+    end // initial
+    `ifdef FIRRTL_AFTER_INITIAL
+      `FIRRTL_AFTER_INITIAL
+    `endif // FIRRTL_AFTER_INITIAL
+  `endif // ENABLE_INITIAL_REG_
+  assign io_fabric_readData_valid = readIssued;
+  assign io_fabric_readData_bits =
+    readIssued
+      ? {io_sram_readData_0,
+         io_sram_readData_1,
+         io_sram_readData_2,
+         io_sram_readData_3,
+         io_sram_readData_4,
+         io_sram_readData_5,
+         io_sram_readData_6,
+         io_sram_readData_7,
+         io_sram_readData_8,
+         io_sram_readData_9,
+         io_sram_readData_10,
+         io_sram_readData_11,
+         io_sram_readData_12,
+         io_sram_readData_13,
+         io_sram_readData_14,
+         io_sram_readData_15}
+      : 128'h0;
+  assign io_sram_address =
+    io_fabric_writeDataAddr_valid
+      ? io_fabric_writeDataAddr_bits[10:4]
+      : io_fabric_readDataAddr_valid ? io_fabric_readDataAddr_bits[10:4] : 7'h0;
+  assign io_sram_enable = io_fabric_readDataAddr_valid | io_fabric_writeDataAddr_valid;
+  assign io_sram_isWrite = io_fabric_writeDataAddr_valid;
+  assign io_sram_writeData_0 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[7:0] : 8'h0;
+  assign io_sram_writeData_1 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[15:8] : 8'h0;
+  assign io_sram_writeData_2 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[23:16] : 8'h0;
+  assign io_sram_writeData_3 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[31:24] : 8'h0;
+  assign io_sram_writeData_4 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[39:32] : 8'h0;
+  assign io_sram_writeData_5 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[47:40] : 8'h0;
+  assign io_sram_writeData_6 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[55:48] : 8'h0;
+  assign io_sram_writeData_7 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[63:56] : 8'h0;
+  assign io_sram_writeData_8 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[71:64] : 8'h0;
+  assign io_sram_writeData_9 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[79:72] : 8'h0;
+  assign io_sram_writeData_10 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[87:80] : 8'h0;
+  assign io_sram_writeData_11 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[95:88] : 8'h0;
+  assign io_sram_writeData_12 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[103:96] : 8'h0;
+  assign io_sram_writeData_13 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[111:104] : 8'h0;
+  assign io_sram_writeData_14 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[119:112] : 8'h0;
+  assign io_sram_writeData_15 =
+    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[127:120] : 8'h0;
+  assign io_sram_mask_0 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[0];
+  assign io_sram_mask_1 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[1];
+  assign io_sram_mask_2 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[2];
+  assign io_sram_mask_3 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[3];
+  assign io_sram_mask_4 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[4];
+  assign io_sram_mask_5 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[5];
+  assign io_sram_mask_6 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[6];
+  assign io_sram_mask_7 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[7];
+  assign io_sram_mask_8 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[8];
+  assign io_sram_mask_9 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[9];
+  assign io_sram_mask_10 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[10];
+  assign io_sram_mask_11 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[11];
+  assign io_sram_mask_12 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[12];
+  assign io_sram_mask_13 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[13];
+  assign io_sram_mask_14 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[14];
+  assign io_sram_mask_15 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[15];
+endmodule
+
+module FabricArbiter(
+  input          clock,
+                 reset,
+                 io_source_0_readDataAddr_valid,
+  input  [31:0]  io_source_0_readDataAddr_bits,
+  output [127:0] io_source_0_readData_bits,
+  input          io_source_0_writeDataAddr_valid,
+  input  [31:0]  io_source_0_writeDataAddr_bits,
+  input  [127:0] io_source_0_writeDataBits,
+  input  [15:0]  io_source_0_writeDataStrb,
+  input          io_source_1_readDataAddr_valid,
+  input  [31:0]  io_source_1_readDataAddr_bits,
+  output         io_source_1_readData_valid,
+  output [127:0] io_source_1_readData_bits,
+  input          io_source_1_writeDataAddr_valid,
+  input  [31:0]  io_source_1_writeDataAddr_bits,
+  input  [127:0] io_source_1_writeDataBits,
+  input  [15:0]  io_source_1_writeDataStrb,
+  output         io_fabricBusy,
+                 io_port_readDataAddr_valid,
+  output [31:0]  io_port_readDataAddr_bits,
+  input          io_port_readData_valid,
+  input  [127:0] io_port_readData_bits,
+  output         io_port_writeDataAddr_valid,
+  output [31:0]  io_port_writeDataAddr_bits,
+  output [127:0] io_port_writeDataBits,
+  output [15:0]  io_port_writeDataStrb
+);
+
+  wire source0Valid = io_source_0_readDataAddr_valid | io_source_0_writeDataAddr_valid;
+  assign io_source_0_readData_bits = io_port_readData_bits;
+  assign io_source_1_readData_valid = io_port_readData_valid;
+  assign io_source_1_readData_bits = io_port_readData_bits;
+  assign io_fabricBusy = source0Valid;
+  assign io_port_readDataAddr_valid =
+    source0Valid ? io_source_0_readDataAddr_valid : io_source_1_readDataAddr_valid;
+  assign io_port_readDataAddr_bits =
+    source0Valid ? io_source_0_readDataAddr_bits : io_source_1_readDataAddr_bits;
+  assign io_port_writeDataAddr_valid =
+    source0Valid ? io_source_0_writeDataAddr_valid : io_source_1_writeDataAddr_valid;
+  assign io_port_writeDataAddr_bits =
+    source0Valid ? io_source_0_writeDataAddr_bits : io_source_1_writeDataAddr_bits;
+  assign io_port_writeDataBits =
+    source0Valid ? io_source_0_writeDataBits : io_source_1_writeDataBits;
+  assign io_port_writeDataStrb =
+    source0Valid ? io_source_0_writeDataStrb : io_source_1_writeDataStrb;
 endmodule
 
 module SRAM_256x128(
@@ -9101,7 +8082,7 @@ module SRAM_256x128(
   assign io_rdata = selectedSramRead ? _sramModules_1_rdata : _sramModules_0_rdata;
 endmodule
 
-module TCM128(
+module TCM128_1(
   input        clock,
                reset,
   input  [7:0] io_addr,
@@ -9218,7 +8199,7 @@ module TCM128(
   assign io_rdata_15 = _sram_io_rdata[7:0];
 endmodule
 
-module SRAM(
+module SRAM_1(
   input          clock,
                  reset,
                  io_fabric_readDataAddr_valid,
@@ -9385,357 +8366,6 @@ module SRAM(
   assign io_sram_mask_15 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[15];
 endmodule
 
-module FabricArbiter(
-  input          clock,
-                 reset,
-                 io_source_0_readDataAddr_valid,
-  input  [31:0]  io_source_0_readDataAddr_bits,
-  output [127:0] io_source_0_readData_bits,
-  input          io_source_0_writeDataAddr_valid,
-  input  [31:0]  io_source_0_writeDataAddr_bits,
-  input  [127:0] io_source_0_writeDataBits,
-  input  [15:0]  io_source_0_writeDataStrb,
-  input          io_source_1_readDataAddr_valid,
-  input  [31:0]  io_source_1_readDataAddr_bits,
-  output         io_source_1_readData_valid,
-  output [127:0] io_source_1_readData_bits,
-  input          io_source_1_writeDataAddr_valid,
-  input  [31:0]  io_source_1_writeDataAddr_bits,
-  input  [127:0] io_source_1_writeDataBits,
-  input  [15:0]  io_source_1_writeDataStrb,
-  output         io_fabricBusy,
-                 io_port_readDataAddr_valid,
-  output [31:0]  io_port_readDataAddr_bits,
-  input          io_port_readData_valid,
-  input  [127:0] io_port_readData_bits,
-  output         io_port_writeDataAddr_valid,
-  output [31:0]  io_port_writeDataAddr_bits,
-  output [127:0] io_port_writeDataBits,
-  output [15:0]  io_port_writeDataStrb
-);
-
-  wire source0Valid = io_source_0_readDataAddr_valid | io_source_0_writeDataAddr_valid;
-  assign io_source_0_readData_bits = io_port_readData_bits;
-  assign io_source_1_readData_valid = io_port_readData_valid;
-  assign io_source_1_readData_bits = io_port_readData_bits;
-  assign io_fabricBusy = source0Valid;
-  assign io_port_readDataAddr_valid =
-    source0Valid ? io_source_0_readDataAddr_valid : io_source_1_readDataAddr_valid;
-  assign io_port_readDataAddr_bits =
-    source0Valid ? io_source_0_readDataAddr_bits : io_source_1_readDataAddr_bits;
-  assign io_port_writeDataAddr_valid =
-    source0Valid ? io_source_0_writeDataAddr_valid : io_source_1_writeDataAddr_valid;
-  assign io_port_writeDataAddr_bits =
-    source0Valid ? io_source_0_writeDataAddr_bits : io_source_1_writeDataAddr_bits;
-  assign io_port_writeDataBits =
-    source0Valid ? io_source_0_writeDataBits : io_source_1_writeDataBits;
-  assign io_port_writeDataStrb =
-    source0Valid ? io_source_0_writeDataStrb : io_source_1_writeDataStrb;
-endmodule
-
-module SRAM_512x128(
-  input          clock,
-  input  [8:0]   io_addr,
-  input          io_enable,
-                 io_write,
-  input  [127:0] io_wdata,
-  input  [15:0]  io_wmask,
-  output [127:0] io_rdata
-);
-
-  Sram_512x128 sramModules_0 (
-    .clock  (clock),
-    .enable (io_enable),
-    .write  (io_write),
-    .addr   (io_addr),
-    .wdata  (io_wdata),
-    .wmask  (io_wmask),
-    .rdata  (io_rdata)
-  );
-endmodule
-
-module TCM128_1(
-  input        clock,
-  input  [8:0] io_addr,
-  input        io_enable,
-               io_write,
-  input  [7:0] io_wdata_0,
-               io_wdata_1,
-               io_wdata_2,
-               io_wdata_3,
-               io_wdata_4,
-               io_wdata_5,
-               io_wdata_6,
-               io_wdata_7,
-               io_wdata_8,
-               io_wdata_9,
-               io_wdata_10,
-               io_wdata_11,
-               io_wdata_12,
-               io_wdata_13,
-               io_wdata_14,
-               io_wdata_15,
-  input        io_wmask_0,
-               io_wmask_1,
-               io_wmask_2,
-               io_wmask_3,
-               io_wmask_4,
-               io_wmask_5,
-               io_wmask_6,
-               io_wmask_7,
-               io_wmask_8,
-               io_wmask_9,
-               io_wmask_10,
-               io_wmask_11,
-               io_wmask_12,
-               io_wmask_13,
-               io_wmask_14,
-               io_wmask_15,
-  output [7:0] io_rdata_0,
-               io_rdata_1,
-               io_rdata_2,
-               io_rdata_3,
-               io_rdata_4,
-               io_rdata_5,
-               io_rdata_6,
-               io_rdata_7,
-               io_rdata_8,
-               io_rdata_9,
-               io_rdata_10,
-               io_rdata_11,
-               io_rdata_12,
-               io_rdata_13,
-               io_rdata_14,
-               io_rdata_15
-);
-
-  wire [127:0] _sram_io_rdata;
-  SRAM_512x128 sram (
-    .clock     (clock),
-    .io_addr   (io_addr),
-    .io_enable (io_enable),
-    .io_write  (io_write),
-    .io_wdata
-      ({io_wdata_15,
-        io_wdata_14,
-        io_wdata_13,
-        io_wdata_12,
-        io_wdata_11,
-        io_wdata_10,
-        io_wdata_9,
-        io_wdata_8,
-        io_wdata_7,
-        io_wdata_6,
-        io_wdata_5,
-        io_wdata_4,
-        io_wdata_3,
-        io_wdata_2,
-        io_wdata_1,
-        io_wdata_0}),
-    .io_wmask
-      ({io_wmask_15,
-        io_wmask_14,
-        io_wmask_13,
-        io_wmask_12,
-        io_wmask_11,
-        io_wmask_10,
-        io_wmask_9,
-        io_wmask_8,
-        io_wmask_7,
-        io_wmask_6,
-        io_wmask_5,
-        io_wmask_4,
-        io_wmask_3,
-        io_wmask_2,
-        io_wmask_1,
-        io_wmask_0}),
-    .io_rdata  (_sram_io_rdata)
-  );
-  assign io_rdata_0 = _sram_io_rdata[127:120];
-  assign io_rdata_1 = _sram_io_rdata[119:112];
-  assign io_rdata_2 = _sram_io_rdata[111:104];
-  assign io_rdata_3 = _sram_io_rdata[103:96];
-  assign io_rdata_4 = _sram_io_rdata[95:88];
-  assign io_rdata_5 = _sram_io_rdata[87:80];
-  assign io_rdata_6 = _sram_io_rdata[79:72];
-  assign io_rdata_7 = _sram_io_rdata[71:64];
-  assign io_rdata_8 = _sram_io_rdata[63:56];
-  assign io_rdata_9 = _sram_io_rdata[55:48];
-  assign io_rdata_10 = _sram_io_rdata[47:40];
-  assign io_rdata_11 = _sram_io_rdata[39:32];
-  assign io_rdata_12 = _sram_io_rdata[31:24];
-  assign io_rdata_13 = _sram_io_rdata[23:16];
-  assign io_rdata_14 = _sram_io_rdata[15:8];
-  assign io_rdata_15 = _sram_io_rdata[7:0];
-endmodule
-
-module SRAM_1(
-  input          clock,
-                 reset,
-                 io_fabric_readDataAddr_valid,
-  input  [31:0]  io_fabric_readDataAddr_bits,
-  output         io_fabric_readData_valid,
-  output [127:0] io_fabric_readData_bits,
-  input          io_fabric_writeDataAddr_valid,
-  input  [31:0]  io_fabric_writeDataAddr_bits,
-  input  [127:0] io_fabric_writeDataBits,
-  input  [15:0]  io_fabric_writeDataStrb,
-  output [8:0]   io_sram_address,
-  output         io_sram_enable,
-                 io_sram_isWrite,
-  input  [7:0]   io_sram_readData_0,
-                 io_sram_readData_1,
-                 io_sram_readData_2,
-                 io_sram_readData_3,
-                 io_sram_readData_4,
-                 io_sram_readData_5,
-                 io_sram_readData_6,
-                 io_sram_readData_7,
-                 io_sram_readData_8,
-                 io_sram_readData_9,
-                 io_sram_readData_10,
-                 io_sram_readData_11,
-                 io_sram_readData_12,
-                 io_sram_readData_13,
-                 io_sram_readData_14,
-                 io_sram_readData_15,
-  output [7:0]   io_sram_writeData_0,
-                 io_sram_writeData_1,
-                 io_sram_writeData_2,
-                 io_sram_writeData_3,
-                 io_sram_writeData_4,
-                 io_sram_writeData_5,
-                 io_sram_writeData_6,
-                 io_sram_writeData_7,
-                 io_sram_writeData_8,
-                 io_sram_writeData_9,
-                 io_sram_writeData_10,
-                 io_sram_writeData_11,
-                 io_sram_writeData_12,
-                 io_sram_writeData_13,
-                 io_sram_writeData_14,
-                 io_sram_writeData_15,
-  output         io_sram_mask_0,
-                 io_sram_mask_1,
-                 io_sram_mask_2,
-                 io_sram_mask_3,
-                 io_sram_mask_4,
-                 io_sram_mask_5,
-                 io_sram_mask_6,
-                 io_sram_mask_7,
-                 io_sram_mask_8,
-                 io_sram_mask_9,
-                 io_sram_mask_10,
-                 io_sram_mask_11,
-                 io_sram_mask_12,
-                 io_sram_mask_13,
-                 io_sram_mask_14,
-                 io_sram_mask_15
-);
-
-  reg readIssued;
-  always @(posedge clock or posedge reset) begin
-    if (reset)
-      readIssued <= 1'h0;
-    else
-      readIssued <= io_fabric_readDataAddr_valid & ~io_fabric_writeDataAddr_valid;
-  end // always @(posedge, posedge)
-  `ifdef ENABLE_INITIAL_REG_
-    `ifdef FIRRTL_BEFORE_INITIAL
-      `FIRRTL_BEFORE_INITIAL
-    `endif // FIRRTL_BEFORE_INITIAL
-    logic [31:0] _RANDOM[0:0];
-    initial begin
-      `ifdef INIT_RANDOM_PROLOG_
-        `INIT_RANDOM_PROLOG_
-      `endif // INIT_RANDOM_PROLOG_
-      `ifdef RANDOMIZE_REG_INIT
-        _RANDOM[/*Zero width*/ 1'b0] = `RANDOM;
-        readIssued = _RANDOM[/*Zero width*/ 1'b0][0];
-      `endif // RANDOMIZE_REG_INIT
-      if (reset)
-        readIssued = 1'h0;
-    end // initial
-    `ifdef FIRRTL_AFTER_INITIAL
-      `FIRRTL_AFTER_INITIAL
-    `endif // FIRRTL_AFTER_INITIAL
-  `endif // ENABLE_INITIAL_REG_
-  assign io_fabric_readData_valid = readIssued;
-  assign io_fabric_readData_bits =
-    readIssued
-      ? {io_sram_readData_0,
-         io_sram_readData_1,
-         io_sram_readData_2,
-         io_sram_readData_3,
-         io_sram_readData_4,
-         io_sram_readData_5,
-         io_sram_readData_6,
-         io_sram_readData_7,
-         io_sram_readData_8,
-         io_sram_readData_9,
-         io_sram_readData_10,
-         io_sram_readData_11,
-         io_sram_readData_12,
-         io_sram_readData_13,
-         io_sram_readData_14,
-         io_sram_readData_15}
-      : 128'h0;
-  assign io_sram_address =
-    io_fabric_writeDataAddr_valid
-      ? io_fabric_writeDataAddr_bits[12:4]
-      : io_fabric_readDataAddr_valid ? io_fabric_readDataAddr_bits[12:4] : 9'h0;
-  assign io_sram_enable = io_fabric_readDataAddr_valid | io_fabric_writeDataAddr_valid;
-  assign io_sram_isWrite = io_fabric_writeDataAddr_valid;
-  assign io_sram_writeData_0 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[7:0] : 8'h0;
-  assign io_sram_writeData_1 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[15:8] : 8'h0;
-  assign io_sram_writeData_2 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[23:16] : 8'h0;
-  assign io_sram_writeData_3 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[31:24] : 8'h0;
-  assign io_sram_writeData_4 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[39:32] : 8'h0;
-  assign io_sram_writeData_5 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[47:40] : 8'h0;
-  assign io_sram_writeData_6 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[55:48] : 8'h0;
-  assign io_sram_writeData_7 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[63:56] : 8'h0;
-  assign io_sram_writeData_8 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[71:64] : 8'h0;
-  assign io_sram_writeData_9 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[79:72] : 8'h0;
-  assign io_sram_writeData_10 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[87:80] : 8'h0;
-  assign io_sram_writeData_11 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[95:88] : 8'h0;
-  assign io_sram_writeData_12 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[103:96] : 8'h0;
-  assign io_sram_writeData_13 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[111:104] : 8'h0;
-  assign io_sram_writeData_14 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[119:112] : 8'h0;
-  assign io_sram_writeData_15 =
-    io_fabric_writeDataAddr_valid ? io_fabric_writeDataBits[127:120] : 8'h0;
-  assign io_sram_mask_0 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[0];
-  assign io_sram_mask_1 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[1];
-  assign io_sram_mask_2 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[2];
-  assign io_sram_mask_3 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[3];
-  assign io_sram_mask_4 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[4];
-  assign io_sram_mask_5 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[5];
-  assign io_sram_mask_6 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[6];
-  assign io_sram_mask_7 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[7];
-  assign io_sram_mask_8 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[8];
-  assign io_sram_mask_9 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[9];
-  assign io_sram_mask_10 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[10];
-  assign io_sram_mask_11 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[11];
-  assign io_sram_mask_12 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[12];
-  assign io_sram_mask_13 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[13];
-  assign io_sram_mask_14 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[14];
-  assign io_sram_mask_15 = ~io_fabric_writeDataAddr_valid | io_fabric_writeDataStrb[15];
-endmodule
-
 module FabricMux(
   input          clock,
                  reset,
@@ -9781,8 +8411,8 @@ module FabricMux(
     io_source_readDataAddr_valid
       ? io_source_readDataAddr_bits
       : io_source_writeDataAddr_valid ? io_source_writeDataAddr_bits : 32'h0;
-  wire        _selected_T_5 = sourceValid & addr < 32'h1000;
-  wire        _selected_T_11 = sourceValid & (|(addr[31:16])) & addr < 32'h12000;
+  wire        _selected_T_5 = sourceValid & addr < 32'h800;
+  wire        _selected_T_11 = sourceValid & (|(addr[31:16])) & addr < 32'h11000;
   wire        _selected_T_18_valid = sourceValid & addr > 32'h2FFFF & addr < 32'h31000;
   wire        selected_valid = _selected_T_5 | _selected_T_11 | _selected_T_18_valid;
   wire [1:0]  selected_bits =
@@ -11317,9 +9947,7 @@ module CoreMiniAxi(
   input          io_irq,
   output [3:0]   io_debug_en,
   output [31:0]  io_debug_addr_0,
-                 io_debug_addr_1,
                  io_debug_inst_0,
-                 io_debug_inst_1,
                  io_debug_cycles,
   output         io_debug_dbus_valid,
   output [31:0]  io_debug_dbus_bits_addr,
@@ -11328,13 +9956,8 @@ module CoreMiniAxi(
                  io_debug_dispatch_0_instFire,
   output [31:0]  io_debug_dispatch_0_instAddr,
                  io_debug_dispatch_0_instInst,
-  output         io_debug_dispatch_1_instFire,
-  output [31:0]  io_debug_dispatch_1_instAddr,
-                 io_debug_dispatch_1_instInst,
   output         io_debug_regfile_writeAddr_0_valid,
   output [4:0]   io_debug_regfile_writeAddr_0_bits,
-  output         io_debug_regfile_writeAddr_1_valid,
-  output [4:0]   io_debug_regfile_writeAddr_1_bits,
   output         io_debug_regfile_writeData_0_valid,
   output [4:0]   io_debug_regfile_writeData_0_bits_addr,
   output [31:0]  io_debug_regfile_writeData_0_bits_data,
@@ -11344,9 +9967,6 @@ module CoreMiniAxi(
   output         io_debug_regfile_writeData_2_valid,
   output [4:0]   io_debug_regfile_writeData_2_bits_addr,
   output [31:0]  io_debug_regfile_writeData_2_bits_data,
-  output         io_debug_regfile_writeData_3_valid,
-  output [4:0]   io_debug_regfile_writeData_3_bits_addr,
-  output [31:0]  io_debug_regfile_writeData_3_bits_data,
   output         io_slog_valid,
   output [4:0]   io_slog_addr,
   output [31:0]  io_slog_data,
@@ -11402,7 +10022,7 @@ module CoreMiniAxi(
   wire [15:0]  _dtcmArbiter_io_port_writeDataStrb;
   wire         _dtcmWrapper_io_fabric_readData_valid;
   wire [127:0] _dtcmWrapper_io_fabric_readData_bits;
-  wire [8:0]   _dtcmWrapper_io_sram_address;
+  wire [7:0]   _dtcmWrapper_io_sram_address;
   wire         _dtcmWrapper_io_sram_enable;
   wire         _dtcmWrapper_io_sram_isWrite;
   wire [7:0]   _dtcmWrapper_io_sram_writeData_0;
@@ -11465,7 +10085,7 @@ module CoreMiniAxi(
   wire [15:0]  _itcmArbiter_io_port_writeDataStrb;
   wire         _itcmWrapper_io_fabric_readData_valid;
   wire [127:0] _itcmWrapper_io_fabric_readData_bits;
-  wire [7:0]   _itcmWrapper_io_sram_address;
+  wire [6:0]   _itcmWrapper_io_sram_address;
   wire         _itcmWrapper_io_sram_enable;
   wire         _itcmWrapper_io_sram_isWrite;
   wire [7:0]   _itcmWrapper_io_sram_writeData_0;
@@ -11639,7 +10259,7 @@ module CoreMiniAxi(
     .io_ibus_addr                           (_core_io_ibus_addr),
     .io_ibus_rdata                          (_itcmArbiter_io_source_0_readData_bits),
     .io_ibus_fault_valid
-      (_core_io_ibus_valid & (|(_core_io_ibus_addr[31:12]))),
+      (_core_io_ibus_valid & (|(_core_io_ibus_addr[31:11]))),
     .io_ibus_fault_bits_epc                 (_core_io_ibus_addr),
     .io_dbus_valid                          (_core_io_dbus_valid),
     .io_dbus_write                          (_core_io_dbus_write),
@@ -11665,9 +10285,7 @@ module CoreMiniAxi(
     .io_slog_data                           (io_slog_data),
     .io_debug_en                            (io_debug_en),
     .io_debug_addr_0                        (io_debug_addr_0),
-    .io_debug_addr_1                        (io_debug_addr_1),
     .io_debug_inst_0                        (io_debug_inst_0),
-    .io_debug_inst_1                        (io_debug_inst_1),
     .io_debug_cycles                        (io_debug_cycles),
     .io_debug_dbus_valid                    (io_debug_dbus_valid),
     .io_debug_dbus_bits_addr                (io_debug_dbus_bits_addr),
@@ -11676,13 +10294,8 @@ module CoreMiniAxi(
     .io_debug_dispatch_0_instFire           (io_debug_dispatch_0_instFire),
     .io_debug_dispatch_0_instAddr           (io_debug_dispatch_0_instAddr),
     .io_debug_dispatch_0_instInst           (io_debug_dispatch_0_instInst),
-    .io_debug_dispatch_1_instFire           (io_debug_dispatch_1_instFire),
-    .io_debug_dispatch_1_instAddr           (io_debug_dispatch_1_instAddr),
-    .io_debug_dispatch_1_instInst           (io_debug_dispatch_1_instInst),
     .io_debug_regfile_writeAddr_0_valid     (io_debug_regfile_writeAddr_0_valid),
     .io_debug_regfile_writeAddr_0_bits      (io_debug_regfile_writeAddr_0_bits),
-    .io_debug_regfile_writeAddr_1_valid     (io_debug_regfile_writeAddr_1_valid),
-    .io_debug_regfile_writeAddr_1_bits      (io_debug_regfile_writeAddr_1_bits),
     .io_debug_regfile_writeData_0_valid     (io_debug_regfile_writeData_0_valid),
     .io_debug_regfile_writeData_0_bits_addr (io_debug_regfile_writeData_0_bits_addr),
     .io_debug_regfile_writeData_0_bits_data (io_debug_regfile_writeData_0_bits_data),
@@ -11691,14 +10304,10 @@ module CoreMiniAxi(
     .io_debug_regfile_writeData_1_bits_data (io_debug_regfile_writeData_1_bits_data),
     .io_debug_regfile_writeData_2_valid     (io_debug_regfile_writeData_2_valid),
     .io_debug_regfile_writeData_2_bits_addr (io_debug_regfile_writeData_2_bits_addr),
-    .io_debug_regfile_writeData_2_bits_data (io_debug_regfile_writeData_2_bits_data),
-    .io_debug_regfile_writeData_3_valid     (io_debug_regfile_writeData_3_valid),
-    .io_debug_regfile_writeData_3_bits_addr (io_debug_regfile_writeData_3_bits_addr),
-    .io_debug_regfile_writeData_3_bits_data (io_debug_regfile_writeData_3_bits_data)
+    .io_debug_regfile_writeData_2_bits_data (io_debug_regfile_writeData_2_bits_data)
   );
   TCM128 itcm (
     .clock       (_rst_sync_clk_o),
-    .reset       (_global_reset_T_2),
     .io_addr     (_itcmWrapper_io_sram_address),
     .io_enable   (_itcmWrapper_io_sram_enable),
     .io_write    (_itcmWrapper_io_sram_isWrite),
@@ -11844,6 +10453,7 @@ module CoreMiniAxi(
   );
   TCM128_1 dtcm (
     .clock       (_rst_sync_clk_o),
+    .reset       (_global_reset_T_2),
     .io_addr     (_dtcmWrapper_io_sram_address),
     .io_enable   (_dtcmWrapper_io_sram_enable),
     .io_write    (_dtcmWrapper_io_sram_isWrite),
@@ -12166,138 +10776,104 @@ endmodule
 `ifndef layers_CoreMiniAxi_Verification_Assert
 `define layers_CoreMiniAxi_Verification_Assert
 bind Regfile Regfile_Verification_Assert verification_Assert (
-  ._GEN             (_valid_T_4),
-  ._GEN_0           (valid_3),
+  ._GEN             (_valid_T_2),
+  ._GEN_0           (valid_2),
   ._GEN_1           (_valid_T),
-  ._GEN_2           (valid_1),
   .reset            (reset),
-  ._GEN_3           (1'h1),
-  ._GEN_4           (_valid_T_12),
-  ._GEN_5           (valid_3_1),
-  ._GEN_6           (_valid_T_8),
-  ._GEN_7           (valid_1_1),
-  ._GEN_8           (_valid_T_20),
-  ._GEN_9           (valid_3_2),
-  ._GEN_10          (_valid_T_16),
-  ._GEN_11          (valid_1_2),
-  ._GEN_12          (_valid_T_28),
-  ._GEN_13          (valid_3_3),
+  ._GEN_2           (1'h1),
+  ._GEN_3           (_valid_T_8),
+  ._GEN_4           (valid_2_1),
+  ._GEN_5           (_valid_T_6),
+  ._GEN_6           (_valid_T_14),
+  ._GEN_7           (valid_2_2),
+  ._GEN_8           (_valid_T_12),
+  ._GEN_9           (_valid_T_20),
+  ._GEN_10          (valid_2_3),
+  ._GEN_11          (_valid_T_18),
+  ._GEN_12          (_valid_T_26),
+  ._GEN_13          (valid_2_4),
   ._GEN_14          (_valid_T_24),
-  ._GEN_15          (valid_1_3),
-  ._GEN_16          (_valid_T_36),
-  ._GEN_17          (valid_3_4),
-  ._GEN_18          (_valid_T_32),
-  ._GEN_19          (valid_1_4),
-  ._GEN_20          (_valid_T_44),
-  ._GEN_21          (valid_3_5),
-  ._GEN_22          (_valid_T_40),
-  ._GEN_23          (valid_1_5),
-  ._GEN_24          (_valid_T_52),
-  ._GEN_25          (valid_3_6),
+  ._GEN_15          (_valid_T_32),
+  ._GEN_16          (valid_2_5),
+  ._GEN_17          (_valid_T_30),
+  ._GEN_18          (_valid_T_38),
+  ._GEN_19          (valid_2_6),
+  ._GEN_20          (_valid_T_36),
+  ._GEN_21          (_valid_T_44),
+  ._GEN_22          (valid_2_7),
+  ._GEN_23          (_valid_T_42),
+  ._GEN_24          (_valid_T_50),
+  ._GEN_25          (valid_2_8),
   ._GEN_26          (_valid_T_48),
-  ._GEN_27          (valid_1_6),
-  ._GEN_28          (_valid_T_60),
-  ._GEN_29          (valid_3_7),
-  ._GEN_30          (_valid_T_56),
-  ._GEN_31          (valid_1_7),
-  ._GEN_32          (_valid_T_68),
-  ._GEN_33          (valid_3_8),
-  ._GEN_34          (_valid_T_64),
-  ._GEN_35          (valid_1_8),
-  ._GEN_36          (_valid_T_76),
-  ._GEN_37          (valid_3_9),
+  ._GEN_27          (_valid_T_56),
+  ._GEN_28          (valid_2_9),
+  ._GEN_29          (_valid_T_54),
+  ._GEN_30          (_valid_T_62),
+  ._GEN_31          (valid_2_10),
+  ._GEN_32          (_valid_T_60),
+  ._GEN_33          (_valid_T_68),
+  ._GEN_34          (valid_2_11),
+  ._GEN_35          (_valid_T_66),
+  ._GEN_36          (_valid_T_74),
+  ._GEN_37          (valid_2_12),
   ._GEN_38          (_valid_T_72),
-  ._GEN_39          (valid_1_9),
-  ._GEN_40          (_valid_T_84),
-  ._GEN_41          (valid_3_10),
-  ._GEN_42          (_valid_T_80),
-  ._GEN_43          (valid_1_10),
-  ._GEN_44          (_valid_T_92),
-  ._GEN_45          (valid_3_11),
-  ._GEN_46          (_valid_T_88),
-  ._GEN_47          (valid_1_11),
-  ._GEN_48          (_valid_T_100),
-  ._GEN_49          (valid_3_12),
+  ._GEN_39          (_valid_T_80),
+  ._GEN_40          (valid_2_13),
+  ._GEN_41          (_valid_T_78),
+  ._GEN_42          (_valid_T_86),
+  ._GEN_43          (valid_2_14),
+  ._GEN_44          (_valid_T_84),
+  ._GEN_45          (_valid_T_92),
+  ._GEN_46          (valid_2_15),
+  ._GEN_47          (_valid_T_90),
+  ._GEN_48          (_valid_T_98),
+  ._GEN_49          (valid_2_16),
   ._GEN_50          (_valid_T_96),
-  ._GEN_51          (valid_1_12),
-  ._GEN_52          (_valid_T_108),
-  ._GEN_53          (valid_3_13),
-  ._GEN_54          (_valid_T_104),
-  ._GEN_55          (valid_1_13),
-  ._GEN_56          (_valid_T_116),
-  ._GEN_57          (valid_3_14),
-  ._GEN_58          (_valid_T_112),
-  ._GEN_59          (valid_1_14),
-  ._GEN_60          (_valid_T_124),
-  ._GEN_61          (valid_3_15),
+  ._GEN_51          (_valid_T_104),
+  ._GEN_52          (valid_2_17),
+  ._GEN_53          (_valid_T_102),
+  ._GEN_54          (_valid_T_110),
+  ._GEN_55          (valid_2_18),
+  ._GEN_56          (_valid_T_108),
+  ._GEN_57          (_valid_T_116),
+  ._GEN_58          (valid_2_19),
+  ._GEN_59          (_valid_T_114),
+  ._GEN_60          (_valid_T_122),
+  ._GEN_61          (valid_2_20),
   ._GEN_62          (_valid_T_120),
-  ._GEN_63          (valid_1_15),
-  ._GEN_64          (_valid_T_132),
-  ._GEN_65          (valid_3_16),
-  ._GEN_66          (_valid_T_128),
-  ._GEN_67          (valid_1_16),
-  ._GEN_68          (_valid_T_140),
-  ._GEN_69          (valid_3_17),
-  ._GEN_70          (_valid_T_136),
-  ._GEN_71          (valid_1_17),
-  ._GEN_72          (_valid_T_148),
-  ._GEN_73          (valid_3_18),
+  ._GEN_63          (_valid_T_128),
+  ._GEN_64          (valid_2_21),
+  ._GEN_65          (_valid_T_126),
+  ._GEN_66          (_valid_T_134),
+  ._GEN_67          (valid_2_22),
+  ._GEN_68          (_valid_T_132),
+  ._GEN_69          (_valid_T_140),
+  ._GEN_70          (valid_2_23),
+  ._GEN_71          (_valid_T_138),
+  ._GEN_72          (_valid_T_146),
+  ._GEN_73          (valid_2_24),
   ._GEN_74          (_valid_T_144),
-  ._GEN_75          (valid_1_18),
-  ._GEN_76          (_valid_T_156),
-  ._GEN_77          (valid_3_19),
-  ._GEN_78          (_valid_T_152),
-  ._GEN_79          (valid_1_19),
-  ._GEN_80          (_valid_T_164),
-  ._GEN_81          (valid_3_20),
-  ._GEN_82          (_valid_T_160),
-  ._GEN_83          (valid_1_20),
-  ._GEN_84          (_valid_T_172),
-  ._GEN_85          (valid_3_21),
+  ._GEN_75          (_valid_T_152),
+  ._GEN_76          (valid_2_25),
+  ._GEN_77          (_valid_T_150),
+  ._GEN_78          (_valid_T_158),
+  ._GEN_79          (valid_2_26),
+  ._GEN_80          (_valid_T_156),
+  ._GEN_81          (_valid_T_164),
+  ._GEN_82          (valid_2_27),
+  ._GEN_83          (_valid_T_162),
+  ._GEN_84          (_valid_T_170),
+  ._GEN_85          (valid_2_28),
   ._GEN_86          (_valid_T_168),
-  ._GEN_87          (valid_1_21),
-  ._GEN_88          (_valid_T_180),
-  ._GEN_89          (valid_3_22),
-  ._GEN_90          (_valid_T_176),
-  ._GEN_91          (valid_1_22),
-  ._GEN_92          (_valid_T_188),
-  ._GEN_93          (valid_3_23),
-  ._GEN_94          (_valid_T_184),
-  ._GEN_95          (valid_1_23),
-  ._GEN_96          (_valid_T_196),
-  ._GEN_97          (valid_3_24),
-  ._GEN_98          (_valid_T_192),
-  ._GEN_99          (valid_1_24),
-  ._GEN_100         (_valid_T_204),
-  ._GEN_101         (valid_3_25),
-  ._GEN_102         (_valid_T_200),
-  ._GEN_103         (valid_1_25),
-  ._GEN_104         (_valid_T_212),
-  ._GEN_105         (valid_3_26),
-  ._GEN_106         (_valid_T_208),
-  ._GEN_107         (valid_1_26),
-  ._GEN_108         (_valid_T_220),
-  ._GEN_109         (valid_3_27),
-  ._GEN_110         (_valid_T_216),
-  ._GEN_111         (valid_1_27),
-  ._GEN_112         (_valid_T_228),
-  ._GEN_113         (valid_3_28),
-  ._GEN_114         (_valid_T_224),
-  ._GEN_115         (valid_1_28),
-  ._GEN_116         (_valid_T_236),
-  ._GEN_117         (valid_3_29),
-  ._GEN_118         (_valid_T_232),
-  ._GEN_119         (valid_1_29),
-  ._GEN_120         (_valid_T_244),
-  ._GEN_121         (valid_3_30),
-  ._GEN_122         (_valid_T_240),
-  ._GEN_123         (valid_1_30),
+  ._GEN_87          (_valid_T_176),
+  ._GEN_88          (valid_2_29),
+  ._GEN_89          (_valid_T_174),
+  ._GEN_90          (_valid_T_182),
+  ._GEN_91          (valid_2_30),
+  ._GEN_92          (_valid_T_180),
   .write_fail       (write_fail),
   .write_fail_1     (write_fail_1),
   .write_fail_2     (write_fail_2),
-  .write_fail_3     (write_fail_3),
-  .write_fail_4     (write_fail_4),
-  .write_fail_5     (write_fail_5),
   .scoreboard_error (scoreboard_error),
   .clock            (clock)
 );
@@ -12393,26 +10969,6 @@ bind Bru Bru_Verification_Assert verification_Assert (
   .io_rs2_valid   (io_rs2_valid),
   .clock          (clock)
 );
-bind Bru_1 Bru_1_Verification_Assert verification_Assert (
-  ._GEN           (_ignore_T_6),
-  ._GEN_0         (_ignore_T_5),
-  ._GEN_1         (_ignore_T_3),
-  ._GEN_2         (_ignore_T_2),
-  ._GEN_3         (_ignore_T_4),
-  .reset          (reset),
-  .io_rs1_valid   (io_rs1_valid),
-  .stateReg_valid (stateReg_valid),
-  ._ignore_WIRE_5 (_ignore_T_5),
-  ._ignore_WIRE_4 (_ignore_T_4),
-  ._ignore_WIRE_7 (stateReg_bits_op == 4'hD),
-  ._ignore_WIRE_6 (_ignore_T_6),
-  ._ignore_WIRE_1 (stateReg_bits_op == 4'h1),
-  ._ignore_WIRE_0 (~(|stateReg_bits_op)),
-  ._ignore_WIRE_3 (_ignore_T_3),
-  ._ignore_WIRE_2 (_ignore_T_2),
-  .io_rs2_valid   (io_rs2_valid),
-  .clock          (clock)
-);
 bind CircularBufferMulti_1 CircularBufferMulti_1_Verification_Assert verification_Assert (
   .io_nEnqueued (nEnqueued),
   .io_enqValid  (io_enqValid),
@@ -12423,7 +10979,7 @@ bind CircularBufferMulti_1 CircularBufferMulti_1_Verification_Assert verificatio
 );
 bind LsuV2 LsuV2_Verification_Assert verification_Assert (
   .reset               (reset),
-  .opQueue_io_enqValid (opQueue_io_enqValid),
+  .opQueue_io_enqValid (_alignedOps_aligner_out_0_valid),
   .opQueue_io_nSpace   (_opQueue_io_nSpace),
   .lineActive_0        (lineActive_0),
   .lineActive_1        (lineActive_1),
@@ -12466,23 +11022,18 @@ bind LsuV2 LsuV2_Verification_Assert verification_Assert (
   .clock               (clock)
 );
 bind Mlu Mlu_Verification_Assert verification_Assert (
-  .io_rs1_0_valid             (io_rs1_0_valid),
-  .stage2Input_q_io_deq_valid (_stage2Input_q_io_deq_valid),
-  ._GEN                       (_stage2Input_q_io_deq_bits_sel[0]),
-  .reset                      (reset),
-  .io_rs2_0_valid             (io_rs2_0_valid),
-  .io_rs1_1_valid             (io_rs1_1_valid),
-  ._GEN_0                     (_stage2Input_q_io_deq_bits_sel[1]),
-  .io_rs2_1_valid             (io_rs2_1_valid),
-  .clock                      (clock)
+  .io_rs1_0_valid                (io_rs1_0_valid),
+  .stage2Input_q_io_deq_valid    (_stage2Input_q_io_deq_valid),
+  .stage2Input_q_io_deq_bits_sel (_stage2Input_q_io_deq_bits_sel),
+  .reset                         (reset),
+  .io_rs2_0_valid                (io_rs2_0_valid),
+  .clock                         (clock)
 );
 bind SCore SCore_Verification_Assert verification_Assert (
   .csr_io_rd_valid   (_csr_io_rd_valid),
   .alu_0_io_rd_valid (_alu_0_io_rd_valid),
   .bru_0_io_rd_valid (_bru_0_io_rd_valid),
   .reset             (reset),
-  .alu_1_io_rd_valid (_alu_1_io_rd_valid),
-  .bru_1_io_rd_valid (_bru_1_io_rd_valid),
   .clock             (clock)
 );
 bind FabricArbiter FabricArbiter_Verification_Assert verification_Assert (
@@ -12543,8 +11094,8 @@ module Regfile_Verification_Assert(
   input _GEN,
         _GEN_0,
         _GEN_1,
-        _GEN_2,
         reset,
+        _GEN_2,
         _GEN_3,
         _GEN_4,
         _GEN_5,
@@ -12635,262 +11186,197 @@ module Regfile_Verification_Assert(
         _GEN_90,
         _GEN_91,
         _GEN_92,
-        _GEN_93,
-        _GEN_94,
-        _GEN_95,
-        _GEN_96,
-        _GEN_97,
-        _GEN_98,
-        _GEN_99,
-        _GEN_100,
-        _GEN_101,
-        _GEN_102,
-        _GEN_103,
-        _GEN_104,
-        _GEN_105,
-        _GEN_106,
-        _GEN_107,
-        _GEN_108,
-        _GEN_109,
-        _GEN_110,
-        _GEN_111,
-        _GEN_112,
-        _GEN_113,
-        _GEN_114,
-        _GEN_115,
-        _GEN_116,
-        _GEN_117,
-        _GEN_118,
-        _GEN_119,
-        _GEN_120,
-        _GEN_121,
-        _GEN_122,
-        _GEN_123,
         write_fail,
         write_fail_1,
         write_fail_2,
-        write_fail_3,
-        write_fail_4,
-        write_fail_5,
         scoreboard_error,
         clock
 );
 
   `ifndef SYNTHESIS
-    wire [2:0] _GEN_124 = {2'h0, _GEN_3};
+    wire [1:0] _GEN_93 = {1'h0, _GEN_2};
     always @(posedge clock) begin
-      if (~reset & {1'h0, {1'h0, _GEN_1} + {1'h0, _GEN_2}}
-          + {1'h0, {1'h0, _GEN} + {1'h0, _GEN_0}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_1} + {1'h0, _GEN} + {1'h0, _GEN_0} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_6} + {1'h0, _GEN_7}}
-          + {1'h0, {1'h0, _GEN_4} + {1'h0, _GEN_5}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_5} + {1'h0, _GEN_3} + {1'h0, _GEN_4} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_10} + {1'h0, _GEN_11}}
-          + {1'h0, {1'h0, _GEN_8} + {1'h0, _GEN_9}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_8} + {1'h0, _GEN_6} + {1'h0, _GEN_7} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_14} + {1'h0, _GEN_15}}
-          + {1'h0, {1'h0, _GEN_12} + {1'h0, _GEN_13}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_11} + {1'h0, _GEN_9} + {1'h0, _GEN_10} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_18} + {1'h0, _GEN_19}}
-          + {1'h0, {1'h0, _GEN_16} + {1'h0, _GEN_17}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_14} + {1'h0, _GEN_12} + {1'h0, _GEN_13} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_22} + {1'h0, _GEN_23}}
-          + {1'h0, {1'h0, _GEN_20} + {1'h0, _GEN_21}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_17} + {1'h0, _GEN_15} + {1'h0, _GEN_16} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_26} + {1'h0, _GEN_27}}
-          + {1'h0, {1'h0, _GEN_24} + {1'h0, _GEN_25}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_20} + {1'h0, _GEN_18} + {1'h0, _GEN_19} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_30} + {1'h0, _GEN_31}}
-          + {1'h0, {1'h0, _GEN_28} + {1'h0, _GEN_29}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_23} + {1'h0, _GEN_21} + {1'h0, _GEN_22} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_34} + {1'h0, _GEN_35}}
-          + {1'h0, {1'h0, _GEN_32} + {1'h0, _GEN_33}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_26} + {1'h0, _GEN_24} + {1'h0, _GEN_25} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_38} + {1'h0, _GEN_39}}
-          + {1'h0, {1'h0, _GEN_36} + {1'h0, _GEN_37}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_29} + {1'h0, _GEN_27} + {1'h0, _GEN_28} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_42} + {1'h0, _GEN_43}}
-          + {1'h0, {1'h0, _GEN_40} + {1'h0, _GEN_41}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_32} + {1'h0, _GEN_30} + {1'h0, _GEN_31} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_46} + {1'h0, _GEN_47}}
-          + {1'h0, {1'h0, _GEN_44} + {1'h0, _GEN_45}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_35} + {1'h0, _GEN_33} + {1'h0, _GEN_34} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_50} + {1'h0, _GEN_51}}
-          + {1'h0, {1'h0, _GEN_48} + {1'h0, _GEN_49}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_38} + {1'h0, _GEN_36} + {1'h0, _GEN_37} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_54} + {1'h0, _GEN_55}}
-          + {1'h0, {1'h0, _GEN_52} + {1'h0, _GEN_53}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_41} + {1'h0, _GEN_39} + {1'h0, _GEN_40} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_58} + {1'h0, _GEN_59}}
-          + {1'h0, {1'h0, _GEN_56} + {1'h0, _GEN_57}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_44} + {1'h0, _GEN_42} + {1'h0, _GEN_43} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_62} + {1'h0, _GEN_63}}
-          + {1'h0, {1'h0, _GEN_60} + {1'h0, _GEN_61}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_47} + {1'h0, _GEN_45} + {1'h0, _GEN_46} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_66} + {1'h0, _GEN_67}}
-          + {1'h0, {1'h0, _GEN_64} + {1'h0, _GEN_65}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_50} + {1'h0, _GEN_48} + {1'h0, _GEN_49} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_70} + {1'h0, _GEN_71}}
-          + {1'h0, {1'h0, _GEN_68} + {1'h0, _GEN_69}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_53} + {1'h0, _GEN_51} + {1'h0, _GEN_52} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_74} + {1'h0, _GEN_75}}
-          + {1'h0, {1'h0, _GEN_72} + {1'h0, _GEN_73}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_56} + {1'h0, _GEN_54} + {1'h0, _GEN_55} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_78} + {1'h0, _GEN_79}}
-          + {1'h0, {1'h0, _GEN_76} + {1'h0, _GEN_77}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_59} + {1'h0, _GEN_57} + {1'h0, _GEN_58} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_82} + {1'h0, _GEN_83}}
-          + {1'h0, {1'h0, _GEN_80} + {1'h0, _GEN_81}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_62} + {1'h0, _GEN_60} + {1'h0, _GEN_61} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_86} + {1'h0, _GEN_87}}
-          + {1'h0, {1'h0, _GEN_84} + {1'h0, _GEN_85}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_65} + {1'h0, _GEN_63} + {1'h0, _GEN_64} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_90} + {1'h0, _GEN_91}}
-          + {1'h0, {1'h0, _GEN_88} + {1'h0, _GEN_89}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_68} + {1'h0, _GEN_66} + {1'h0, _GEN_67} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_94} + {1'h0, _GEN_95}}
-          + {1'h0, {1'h0, _GEN_92} + {1'h0, _GEN_93}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_71} + {1'h0, _GEN_69} + {1'h0, _GEN_70} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_98} + {1'h0, _GEN_99}}
-          + {1'h0, {1'h0, _GEN_96} + {1'h0, _GEN_97}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_74} + {1'h0, _GEN_72} + {1'h0, _GEN_73} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_102} + {1'h0, _GEN_103}}
-          + {1'h0, {1'h0, _GEN_100} + {1'h0, _GEN_101}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_77} + {1'h0, _GEN_75} + {1'h0, _GEN_76} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_106} + {1'h0, _GEN_107}}
-          + {1'h0, {1'h0, _GEN_104} + {1'h0, _GEN_105}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_80} + {1'h0, _GEN_78} + {1'h0, _GEN_79} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_110} + {1'h0, _GEN_111}}
-          + {1'h0, {1'h0, _GEN_108} + {1'h0, _GEN_109}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_83} + {1'h0, _GEN_81} + {1'h0, _GEN_82} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_114} + {1'h0, _GEN_115}}
-          + {1'h0, {1'h0, _GEN_112} + {1'h0, _GEN_113}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_86} + {1'h0, _GEN_84} + {1'h0, _GEN_85} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_118} + {1'h0, _GEN_119}}
-          + {1'h0, {1'h0, _GEN_116} + {1'h0, _GEN_117}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_89} + {1'h0, _GEN_87} + {1'h0, _GEN_88} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, {1'h0, _GEN_122} + {1'h0, _GEN_123}}
-          + {1'h0, {1'h0, _GEN_120} + {1'h0, _GEN_121}} > _GEN_124) begin
+      if (~reset & {1'h0, _GEN_92} + {1'h0, _GEN_90} + {1'h0, _GEN_91} > _GEN_93) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:148\n");
         if (`STOP_COND_)
@@ -12909,24 +11395,6 @@ module Regfile_Verification_Assert(
           $fatal;
       end
       if (~reset & write_fail_2) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Regfile.scala:234\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & write_fail_3) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Regfile.scala:234\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & write_fail_4) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Regfile.scala:234\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & write_fail_5) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Regfile.scala:234\n");
         if (`STOP_COND_)
@@ -13284,91 +11752,6 @@ module Bru_Verification_Assert(
 endmodule
 
 
-// ----- 8< ----- FILE "verification/assert/Bru_1_Verification_Assert.sv" ----- 8< -----
-
-// Generated by CIRCT firtool-1.114.0-2-g6cf2492e1
-
-// Users can define 'STOP_COND' to add an extra gate to stop conditions.
-`ifndef STOP_COND_
-  `ifdef STOP_COND
-    `define STOP_COND_ (`STOP_COND)
-  `else  // STOP_COND
-    `define STOP_COND_ 1
-  `endif // STOP_COND
-`endif // not def STOP_COND_
-
-// Users can define 'ASSERT_VERBOSE_COND' to add an extra gate to assert error printing.
-`ifndef ASSERT_VERBOSE_COND_
-  `ifdef ASSERT_VERBOSE_COND
-    `define ASSERT_VERBOSE_COND_ (`ASSERT_VERBOSE_COND)
-  `else  // ASSERT_VERBOSE_COND
-    `define ASSERT_VERBOSE_COND_ 1
-  `endif // ASSERT_VERBOSE_COND
-`endif // not def ASSERT_VERBOSE_COND_
-module Bru_1_Verification_Assert(
-  input _GEN,
-        _GEN_0,
-        _GEN_1,
-        _GEN_2,
-        _GEN_3,
-        reset,
-        io_rs1_valid,
-        stateReg_valid,
-        _ignore_WIRE_5,
-        _ignore_WIRE_4,
-        _ignore_WIRE_7,
-        _ignore_WIRE_6,
-        _ignore_WIRE_1,
-        _ignore_WIRE_0,
-        _ignore_WIRE_3,
-        _ignore_WIRE_2,
-        io_rs2_valid,
-        clock
-);
-
-  `ifndef SYNTHESIS
-    always @(posedge clock) begin
-      if (~reset & (|{_GEN, _GEN_0, _GEN_3, _GEN_1, _GEN_2})) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Bru.scala:162\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset
-          & {~(stateReg_valid & ~io_rs1_valid),
-             _ignore_WIRE_7,
-             _ignore_WIRE_6,
-             _ignore_WIRE_5,
-             _ignore_WIRE_4,
-             _ignore_WIRE_3,
-             _ignore_WIRE_2,
-             _ignore_WIRE_1,
-             _ignore_WIRE_0} == 9'h0) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Bru.scala:264\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset
-          & {~(stateReg_valid & ~io_rs2_valid),
-             _ignore_WIRE_7,
-             _ignore_WIRE_6,
-             _ignore_WIRE_5,
-             _ignore_WIRE_4,
-             _ignore_WIRE_3,
-             _ignore_WIRE_2,
-             _ignore_WIRE_1,
-             _ignore_WIRE_0} == 9'h0) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Bru.scala:265\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-    end // always @(posedge)
-  `endif // not def SYNTHESIS
-endmodule
-
-
 // ----- 8< ----- FILE "verification/assert/CircularBufferMulti_1_Verification_Assert.sv" ----- 8< -----
 
 // Generated by CIRCT firtool-1.114.0-2-g6cf2492e1
@@ -13392,18 +11775,18 @@ endmodule
 `endif // not def ASSERT_VERBOSE_COND_
 module CircularBufferMulti_1_Verification_Assert(
   input [2:0] io_nEnqueued,
-  input [1:0] io_enqValid,
+  input       io_enqValid,
               io_deqReady,
-  input       reset,
+              reset,
   input [2:0] _GEN,
   input       clock
 );
 
   `ifndef SYNTHESIS
     wire [3:0] _GEN_0 = {1'h0, io_nEnqueued};
-    wire [3:0] _GEN_1 = {2'h0, io_enqValid};
+    wire [3:0] _GEN_1 = {3'h0, io_enqValid};
     always @(posedge clock) begin
-      if (~reset & {1'h0, _GEN_0 + _GEN_1} - {3'h0, io_deqReady} > {2'h0, _GEN}) begin
+      if (~reset & {1'h0, _GEN_0 + _GEN_1} - {4'h0, io_deqReady} > {2'h0, _GEN}) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at CircularBufferMulti.scala:43\n");
         if (`STOP_COND_)
@@ -13415,7 +11798,7 @@ module CircularBufferMulti_1_Verification_Assert(
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & {1'h0, io_deqReady} > io_nEnqueued) begin
+      if (~reset & {2'h0, io_deqReady} > io_nEnqueued) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at CircularBufferMulti.scala:46\n");
         if (`STOP_COND_)
@@ -13449,7 +11832,7 @@ endmodule
 `endif // not def ASSERT_VERBOSE_COND_
 module LsuV2_Verification_Assert(
   input       reset,
-  input [1:0] opQueue_io_enqValid,
+              opQueue_io_enqValid,
   input [2:0] opQueue_io_nSpace,
   input       lineActive_0,
               lineActive_1,
@@ -13495,7 +11878,7 @@ module LsuV2_Verification_Assert(
   `ifndef SYNTHESIS
     wire [1:0] _GEN_2 = {1'h0, _GEN_1};
     always @(posedge clock) begin
-      if (~reset & {1'h0, opQueue_io_enqValid} > opQueue_io_nSpace) begin
+      if (~reset & {2'h0, opQueue_io_enqValid} > opQueue_io_nSpace) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Lsu.scala:888\n");
         if (`STOP_COND_)
@@ -13576,38 +11959,22 @@ endmodule
 module Mlu_Verification_Assert(
   input io_rs1_0_valid,
         stage2Input_q_io_deq_valid,
-        _GEN,
+        stage2Input_q_io_deq_bits_sel,
         reset,
         io_rs2_0_valid,
-        io_rs1_1_valid,
-        _GEN_0,
-        io_rs2_1_valid,
         clock
 );
 
   `ifndef SYNTHESIS
-    wire _GEN_1 = stage2Input_q_io_deq_valid & _GEN;
-    wire _GEN_2 = stage2Input_q_io_deq_valid & _GEN_0;
+    wire _GEN = stage2Input_q_io_deq_valid & stage2Input_q_io_deq_bits_sel;
     always @(posedge clock) begin
-      if (~reset & _GEN_1 & ~io_rs1_0_valid) begin
+      if (~reset & _GEN & ~io_rs1_0_valid) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Mlu.scala:120\n");
         if (`STOP_COND_)
           $fatal;
       end
-      if (~reset & _GEN_1 & ~io_rs2_0_valid) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Mlu.scala:121\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & _GEN_2 & ~io_rs1_1_valid) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at Mlu.scala:120\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & _GEN_2 & ~io_rs2_1_valid) begin
+      if (~reset & _GEN & ~io_rs2_0_valid) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at Mlu.scala:121\n");
         if (`STOP_COND_)
@@ -13644,8 +12011,6 @@ module SCore_Verification_Assert(
         alu_0_io_rd_valid,
         bru_0_io_rd_valid,
         reset,
-        alu_1_io_rd_valid,
-        bru_1_io_rd_valid,
         clock
 );
 
@@ -13653,15 +12018,8 @@ module SCore_Verification_Assert(
     wire [2:0] _GEN =
       {1'h0, {1'h0, csr_io_rd_valid} + {1'h0, alu_0_io_rd_valid}}
       + {2'h0, bru_0_io_rd_valid};
-    wire [1:0] _GEN_0 = {1'h0, alu_1_io_rd_valid} + {1'h0, bru_1_io_rd_valid};
     always @(posedge clock) begin
       if (~reset & (|(_GEN[2:1]))) begin
-        if (`ASSERT_VERBOSE_COND_)
-          $error("Assertion failed at SCore.scala:311\n");
-        if (`STOP_COND_)
-          $fatal;
-      end
-      if (~reset & _GEN_0[1]) begin
         if (`ASSERT_VERBOSE_COND_)
           $error("Assertion failed at SCore.scala:311\n");
         if (`STOP_COND_)
@@ -13995,103 +12353,18 @@ module ClockGate(
 `endif
 
 endmodule  // ClockGate
-// ----- 8< ----- FILE "./Aligner.sv" ----- 8< -----
+// ----- 8< ----- FILE "./Aligner_107_1.sv" ----- 8< -----
 
 // Generated by CIRCT firtool-1.114.0-2-g6cf2492e1
-// Copyright 2024 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// A module that moves valid inputs to the front of the output.
-// Example:
-// valid_in = [0, 1, 0, 1], data_in = [A, B, C, D]
-// valid_out = [1, 1, 0, 0], data_out = [B, D, X, X]
-module Aligner#(type T=logic [7:0], parameter N = 8)
-(
-  // Command input.
-  input logic [N-1:0] valid_in,
-  input T [N-1:0] data_in,
-
-  // Command output.
-  output logic [N-1:0] valid_out,
-  output T [N-1:0] data_out
-);
-/* verilator lint_off WIDTHEXPAND */
-/* verilator lint_off WIDTHTRUNC */
-  localparam COUNTBITS = $clog2(N);
-  typedef logic [COUNTBITS-1:0] count_t;
-
-  // Build count
-  count_t valid_count [N-1:0];
-  always_comb begin
-    valid_count[0] = 0;
-    for (int i = 0; i < N-1; i++) begin
-        valid_count[i+1] = valid_count[i] + valid_in[i];
-    end
-  end
-
-  logic [N-1:0][N-1:0] output_valid_map;
-  count_t valid_idx [N-1:0];
-  always_comb begin
-    
-    for (int o = 0; o < N; o++) begin
-      valid_idx[o] = 0;
-      for (int i = 0; i < N; i++) begin
-        output_valid_map[o][i] = (valid_count[i] == o) && valid_in[i];
-        valid_idx[o] = valid_idx[o] | (output_valid_map[o][i] ? i : 0);
-      end
-
-      // Assign outputs
-      valid_out[o] = |output_valid_map[o];
-      data_out[o] = data_in[valid_idx[o]];
-    end
-  end
-/* verilator lint_on WIDTHTRUNC */
-/* verilator lint_on WIDTHEXPAND */
-
-endmodule
-// ----- 8< ----- FILE "./Aligner_107_2.sv" ----- 8< -----
-
-// Generated by CIRCT firtool-1.114.0-2-g6cf2492e1
-module Aligner_107_2(
+module Aligner_107_1(
   input logic in_0_valid,
-  input logic in_1_valid,
   input logic [107-1:0] in_0_bits,
-  input logic [107-1:0] in_1_bits,
   output logic out_0_valid,
-  output logic out_1_valid,
-  output logic [107-1:0] out_0_bits,
-  output logic [107-1:0] out_1_bits);
+  output logic [107-1:0] out_0_bits);
 
-  logic [2-1:0] valid_in;
-  assign valid_in[0] = in_0_valid;
-  assign valid_in[1] = in_1_valid;
-  logic [2-1:0][107-1:0] data_in;
-  assign data_in[0] = in_0_bits;
-  assign data_in[1] = in_1_bits;
-  logic [2-1:0] valid_out;
-  assign out_0_valid = valid_out[0];
-  assign out_1_valid = valid_out[1];
-  logic [2-1:0][107-1:0] data_out;
-  assign out_0_bits = data_out[0];
-  assign out_1_bits = data_out[1];
-
-  Aligner#(.T (logic [107-1:0]), .N(2)) aligner(
-    valid_in,
-    data_in,
-    valid_out,
-    data_out
-  );
+  // Simplified for N=1: just pass through
+  assign out_0_valid = in_0_valid;
+  assign out_0_bits = in_0_bits;
 endmodule
 // ----- 8< ----- FILE "./Sram_12ffcp_128x128.v" ----- 8< -----
 
@@ -14191,149 +12464,5 @@ module Sram_12ffcp_128x128(
     end
   end
 `endif // FFCP12_SRAM
-
-endmodule
-// ----- 8< ----- FILE "./Sram_512x128.v" ----- 8< -----
-
-// Copyright 2024 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-module Sram_512x128(
-  input          clock,
-  input          enable,
-  input          write,
-  input  [8:0]   addr,
-  input  [127:0] wdata,
-  input  [15:0] wmask,
-  output [127:0] rdata
-);
-
-///////////////////////////
-///// SRAM Selection //////
-///////////////////////////
-`ifdef USE_TSMC12FFC
-///////////////////////////
-///// TSMC12FFC SRAM //////
-///////////////////////////
-    wire [127:0] nwmask;
-    genvar i;
-    generate
-      for (i = 0; i < 16; i++) begin
-        assign nwmask[8*i +: 8] = {8{~wmask[i]}};
-      end
-    endgenerate
-    TS1N12FFCLLSBLVTD512X128M4SWBSHO u_12ffcp_sram
-    (
-      // Mode Control
-      .BIST(1'b0),          // Built-In Self-Test (active high)
-      // Normal Mode Input
-      .SLP(1'b0),           // Sleep
-      .DSLP(1'b0),          // Deep Sleep
-      .SD(1'b0),            // Shut Down
-      .CLK(clock),          // Clock
-      .CEB(~enable),        // Chip Enable Bar (active low en)
-      .WEB(~write),         // Write Enable Bar (active low WE)
-      .A(addr),             // Address                               (input [8:0] DM)
-      .D(wdata),            // Data                                  (input [127:0] DM)
-      .BWEB(nwmask),        // Bit Write Enable Bar (active low BW)  (input [127:0])
-
-
-      // BIST Mode Input
-      .CEBM(1'b0),          // Chip Enable Bar for BIST Mode
-      .WEBM(1'b0),          // Write Enable Bar for BIST Mode
-      .AM(9'b0),            // Address for BIST Mode               (input [8:0])
-      .DM(128'b0),          // Data Input for BIST Mode            (input [127:0] DM)
-      .BWEBM({128{1'b1}}),  // Bit Write Enable Bar for BIST Mode  (input [127:0] DM)
-
-      // Data Output
-      .Q(rdata),            // Data Output                          (output [127:0])
-      .PUDELAY(),           // Power-Up Delay - Connect for tuning timing in late stage design
-
-      // Test Mode
-`ifndef SIMULATION
-      .RTSEL(2'b0),         // Read Test Select                (input [1:0])
-      .WTSEL(2'b0)          // Write Test Select               (input [1:0])
-`else
-      .RTSEL(2'b1),         // Read Test Select                (input [1:0])
-      .WTSEL(2'b0)          // Write Test Select               (input [1:0])
-`endif
-     );
-`elsif USE_GF22
-///////////////////////////
-//////// GF22 SRAM ////////
-///////////////////////////
-    wire [127:0] nwmask;
-    genvar i;
-    generate
-      for (i = 0; i < 16; i++) begin
-        assign nwmask[8*i +: 8] = {8{wmask[i]}};
-      end
-    endgenerate
-
-    sasdulssd8LOW1p512x128m4b1w0c0p0d0l0rm3sdrw01 u_gf22_sram (
-      .Q(rdata),
-      .ADR(addr),
-      .D(wdata),
-      .WEM(nwmask),
-      .WE(write),
-      .ME(enable),
-      .CLK(clock),
-      .TEST1(1'b0),
-      .TEST_RNM(1'b0),
-      .RME(1'b0),
-      .RM(4'b0),
-      .WA(2'b0),
-      .WPULSE(3'b0),
-      .LS(1'b0),
-      .BC0(1'b0),
-      .BC1(1'b0),
-      .BC2(1'b0)
-    );
-`else
-///////////////////////////
-////// Generic SRAM ///////
-///////////////////////////
-  reg [127:0] mem [0:511];
-  reg [8:0] raddr;
-
-  assign rdata = mem[raddr];
-
-`ifndef SYNTHESIS
-  task randomMemoryAll;
-  for (int i = 0; i < 128; i++) begin
-    for (int j = 0; j < 512; j++) begin
-      mem[i][j] = $random;
-    end
-  end
-  endtask
-
-  initial begin
-    randomMemoryAll;
-  end
-`endif
-
-  always @(posedge clock) begin
-    for (int i = 0; i < 16; i++) begin
-      if (enable & write & wmask[i]) begin
-        mem[addr][i*8 +: 8] <= wdata[8*i +: 8];
-      end
-    end
-
-    if (enable & ~write) begin
-      raddr <= addr;
-    end
-  end
-`endif
 
 endmodule

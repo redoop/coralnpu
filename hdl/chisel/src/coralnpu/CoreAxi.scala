@@ -110,7 +110,7 @@ class CoreAxi(p: Parameters, coreModuleName: String) extends RawModule {
     }
 
     // Build ITCM and connect to ibus
-    val itcmSizeBytes: Int = 1024 * (if (p.tcmHighmem) { 1024 } else { 4 }) // Reduced from 8 kB to 4 kB for area optimization, highmem 1MB
+    val itcmSizeBytes: Int = 1024 * (if (p.tcmHighmem) { 1024 } else { 2 }) // Reduced to 2 kB for maximum area optimization, highmem 1MB
     val itcmSubEntryWidth = 8
     val itcmWidth = p.axi2DataBits
     val itcmEntries = itcmSizeBytes / (itcmWidth / 8)
@@ -141,7 +141,7 @@ class CoreAxi(p: Parameters, coreModuleName: String) extends RawModule {
     core.io.ibus.fault.bits.epc := core.io.ibus.addr
 
     // Build DTCM and connect to dbus
-    val dtcmSizeBytes: Int = 1024 * (if (p.tcmHighmem) { 1024 } else { 8 }) // Reduced from 32 kB to 8 kB for area optimization, highmem 1MB
+    val dtcmSizeBytes: Int = 1024 * (if (p.tcmHighmem) { 1024 } else { 4 }) // Reduced to 4 kB for maximum area optimization, highmem 1MB
     val dtcmWidth = p.axi2DataBits
     val dtcmEntries = dtcmSizeBytes / (dtcmWidth / 8)
     val dtcmSubEntryWidth = 8

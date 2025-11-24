@@ -19,6 +19,7 @@ import chisel3.util._
 
 object GenerateAlignerSource {
     def apply[T <: Data](t: T, n: Int): String = {
+        // Generate module interface
         var moduleInterface =  "module Aligner_T_WIDTH_GENN(\n".replaceAll("T_WIDTH", t.getWidth.toString)
                                                                  .replaceAll("GENN", n.toString)
         for (i <- 0 until n) {
@@ -38,48 +39,66 @@ object GenerateAlignerSource {
         moduleInterface = moduleInterface.dropRight(2)
         moduleInterface += ");\n\n"
 
-        var coreInstantiation = "  logic [GENN-1:0] valid_in;\n".replaceAll("GENN", n.toString)
-        for (i <- 0 until n) {
-            coreInstantiation += "  assign valid_in[GENI] = in_GENI_valid;\n".replaceAll("GENI", i.toString)
+        // For N=1, just pass through (optimization)
+        if (n == 1) {
+            var passthrough = "  // Simplified for N=1: just pass through\n"
+            passthrough += "  assign out_0_valid = in_0_valid;\n"
+            passthrough += "  assign out_0_bits = in_0_bits;\n"
+            return moduleInterface + passthrough + "endmodule\n"
         }
-        coreInstantiation += "  logic [GENN-1:0][T_WIDTH-1:0] data_in;\n".replaceAll("GENN", n.toString)
-                                                                         .replaceAll("T_WIDTH", t.getWidth.toString)
-        for (i <- 0 until n) {
-            coreInstantiation += "  assign data_in[GENI] = in_GENI_bits;\n".replaceAll("GENI", i.toString)
-        }
-        coreInstantiation += "  logic [GENN-1:0] valid_out;\n".replaceAll("GENN", n.toString)
-        for (i <- 0 until n) {
-            coreInstantiation += "  assign out_GENI_valid = valid_out[GENI];\n".replaceAll("GENI", i.toString)
-        }
-        coreInstantiation += "  logic [GENN-1:0][T_WIDTH-1:0] data_out;\n".replaceAll("GENN", n.toString)
-                                                                         .replaceAll("T_WIDTH", t.getWidth.toString)
-        for (i <- 0 until n) {
-            coreInstantiation += "  assign out_GENI_bits = data_out[GENI];\n".replaceAll("GENI", i.toString)
-        }
-        coreInstantiation += """
-        |  Aligner#(.T (logic [T_WIDTH-1:0]), .N(GENN)) aligner(
-        |    valid_in,
-        |    data_in,
-        |    valid_out,
-        |    data_out
-        |  );
-        |""".replaceAll("T_WIDTH", t.getWidth.toString)
-            .replaceAll("GENN", n.toString)
-            .stripMargin
 
-        moduleInterface + coreInstantiation + "endmodule\n"
+        // For N>1, generate full aligner logic inline (without using parameterized types)
+        var implementation = "  // Aligner implementation\n"
+        implementation += "  logic [GENN-1:0] valid_in;\n".replaceAll("GENN", n.toString)
+        for (i <- 0 until n) {
+            implementation += "  assign valid_in[GENI] = in_GENI_valid;\n".replaceAll("GENI", i.toString)
+        }
+        implementation += "  logic [GENN-1:0][T_WIDTH-1:0] data_in;\n".replaceAll("GENN", n.toString)
+                                                                       .replaceAll("T_WIDTH", t.getWidth.toString)
+        for (i <- 0 until n) {
+            implementation += "  assign data_in[GENI] = in_GENI_bits;\n".replaceAll("GENI", i.toString)
+        }
+        
+        // Generate alignment logic
+        implementation += "\n  // Alignment logic\n"
+        implementation += "  logic [GENN-1:0] valid_out;\n".replaceAll("GENN", n.toString)
+        implementation += "  logic [GENN-1:0][T_WIDTH-1:0] data_out;\n".replaceAll("GENN", n.toString)
+                                                                       .replaceAll("T_WIDTH", t.getWidth.toString)
+        
+        // Simple alignment: move valid entries to front
+        implementation += "\n  always_comb begin\n"
+        implementation += "    integer write_idx = 0;\n"
+        implementation += "    valid_out = '0;\n"
+        implementation += "    data_out = '0;\n"
+        implementation += "    for (integer i = 0; i < GENN; i++) begin\n".replaceAll("GENN", n.toString)
+        implementation += "      if (valid_in[i]) begin\n"
+        implementation += "        valid_out[write_idx] = 1'b1;\n"
+        implementation += "        data_out[write_idx] = data_in[i];\n"
+        implementation += "        write_idx = write_idx + 1;\n"
+        implementation += "      end\n"
+        implementation += "    end\n"
+        implementation += "  end\n\n"
+        
+        // Output assignments
+        for (i <- 0 until n) {
+            implementation += "  assign out_GENI_valid = valid_out[GENI];\n".replaceAll("GENI", i.toString)
+        }
+        for (i <- 0 until n) {
+            implementation += "  assign out_GENI_bits = data_out[GENI];\n".replaceAll("GENI", i.toString)
+        }
+
+        moduleInterface + implementation + "endmodule\n"
     }
 }
 
-class Aligner[T <: Data](t: T, n: Int) extends BlackBox with HasBlackBoxInline
-                                 with HasBlackBoxResource {
+class Aligner[T <: Data](t: T, n: Int) extends BlackBox with HasBlackBoxInline {
     override val desiredName = "Aligner_T_WIDTH_GENN".replaceAll("T_WIDTH", t.getWidth.toString)
                                                        .replaceAll("GENN", n.toString)
     val io = IO(new Bundle {
         val in = Input(Vec(n, Valid(UInt(t.getWidth.W))))
         val out = Output(Vec(n, Valid(UInt(t.getWidth.W))))
     })
-    addResource("hdl/verilog/rvv/design/Aligner.sv")
+    // Don't use external resource, generate everything inline
     setInline(s"$desiredName.sv", GenerateAlignerSource(t, n))
 }
 
